@@ -28,15 +28,15 @@ function Dashboard() {
         <main className="flex-1 p-6 space-y-6">
           {/* KPIs */}
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            <KpiCard label="Stagiaires" value="1" icon={Users}
+            <KpiCard label="Stagiaires" value="1" icon={Users} iconTone="blue"
               trend={{ value: "+1 ce mois", direction: "up", tone: "positive" }} />
-            <KpiCard label="Actifs aujourd'hui" value="100%" icon={UserCheck}
+            <KpiCard label="Actifs aujourd'hui" value="100%" icon={UserCheck} iconTone="green"
               trend={{ value: "Tous présents", direction: "up", tone: "positive" }} />
-            <KpiCard label="Projets en cours" value="1" icon={FolderKanban}
+            <KpiCard label="Projets en cours" value="1" icon={FolderKanban} iconTone="violet"
               trend={{ value: "33% avancement", direction: "up", tone: "neutral" }} />
-            <KpiCard label="Rapports déposés" value="0" icon={FileText}
+            <KpiCard label="Rapports déposés" value="0" icon={FileText} iconTone="amber"
               trend={{ value: "1 manquant", direction: "down", tone: "negative" }} />
-            <KpiCard label="Alertes non lues" value="0" icon={Bell}
+            <KpiCard label="Alertes non lues" value="0" icon={Bell} iconTone="red"
               trend={{ value: "0 critique", direction: "flat", tone: "neutral" }} />
           </section>
 
