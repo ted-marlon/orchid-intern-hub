@@ -22,14 +22,17 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window === "undefined" ? true : window.innerWidth >= 768,
+  );
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar open={sidebarOpen} />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar title="Tableau de bord" sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6">
+
           {/* KPIs */}
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <KpiCard label="Stagiaires" value="1" icon={Users} iconTone="blue"
