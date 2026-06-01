@@ -24,11 +24,16 @@ const nav = [
   ]},
 ];
 
-export function Sidebar() {
+export function Sidebar({ open = true }: { open?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside
+      className={`hidden md:flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar overflow-hidden transition-[width] duration-200 ease-out ${
+        open ? "w-60" : "w-0 border-r-0"
+      }`}
+    >
+
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 h-14 border-b border-sidebar-border">
         <div className="h-7 w-7 rounded-md bg-primary/15 border border-primary/30 grid place-items-center text-primary text-xs font-semibold">

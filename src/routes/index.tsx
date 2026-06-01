@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Users, UserCheck, FolderKanban, FileText, Bell } from "lucide-react";
+
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
@@ -20,11 +22,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar title="Tableau de bord" />
+        <Topbar title="Tableau de bord" sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
+
         <main className="flex-1 p-6 space-y-6">
           {/* KPIs */}
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">

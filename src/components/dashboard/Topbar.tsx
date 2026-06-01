@@ -1,13 +1,28 @@
-import { Bell } from "lucide-react";
+import { Bell, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
-export function Topbar({ title }: { title: string }) {
+export function Topbar({
+  title,
+  sidebarOpen = true,
+  onToggleSidebar,
+}: {
+  title: string;
+  sidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
+}) {
   const today = new Date().toLocaleDateString("fr-FR", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 
   return (
-    <header className="h-14 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10 flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
+    <header className="h-14 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10 flex items-center justify-between px-4 md:px-6">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? "Réduire le menu" : "Ouvrir le menu"}
+          className="h-8 w-8 grid place-items-center rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+        </button>
         <h1 className="text-sm font-semibold text-foreground">{title}</h1>
       </div>
       <div className="flex items-center gap-3">
@@ -20,4 +35,3 @@ export function Topbar({ title }: { title: string }) {
     </header>
   );
 }
-
