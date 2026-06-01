@@ -24,15 +24,29 @@ const nav = [
   ]},
 ];
 
-export function Sidebar({ open = true }: { open?: boolean }) {
+export function Sidebar({ open = true, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <aside
-      className={`hidden md:flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar overflow-hidden transition-[width] duration-200 ease-out ${
-        open ? "w-60" : "w-0 border-r-0"
-      }`}
-    >
+    <>
+      {/* Mobile backdrop */}
+      {open && (
+        <button
+          aria-label="Fermer le menu"
+          onClick={onClose}
+          className="md:hidden fixed inset-0 z-40 bg-background/70 backdrop-blur-sm"
+        />
+      )}
+      <aside
+        className={`
+          fixed md:static inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar overflow-hidden
+          transition-[transform,width] duration-200 ease-out
+          w-64 md:w-60
+          ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+          ${open ? "md:w-60" : "md:w-0 md:border-r-0"}
+        `}
+      >
+
 
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 h-14 border-b border-sidebar-border">
