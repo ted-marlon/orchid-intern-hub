@@ -112,6 +112,8 @@ export function Sidebar({ open = true, onClose }: { open?: boolean; onClose?: ()
           Déconnexion
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
+
