@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import {
   X, User, Mail, Lock, Phone, GraduationCap, Briefcase, Building2,
   Calendar, BadgeCheck, Eye, EyeOff, Check, AlertCircle,
