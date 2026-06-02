@@ -8,6 +8,7 @@ import {
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { NewStagiaireDialog } from "@/components/stagiaires/NewStagiaireDialog";
 
 export const Route = createFileRoute("/stagiaires")({
   head: () => ({
