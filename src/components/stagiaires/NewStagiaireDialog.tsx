@@ -298,20 +298,20 @@ function Field({
   );
 }
 
-const Input = (() => {
-  const Cmp = (
-    {
-      value, onChange, placeholder, type = "text", className = "", hasIcon,
-    }: {
-      value: string;
-      onChange: (v: string) => void;
-      placeholder?: string;
-      type?: string;
-      className?: string;
-      hasIcon?: boolean;
-    },
-    ref: React.Ref<HTMLInputElement>,
-  ) => (
+type InputProps = {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  className?: string;
+  hasIcon?: boolean;
+};
+
+const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { value, onChange, placeholder, type = "text", className = "", hasIcon },
+  ref,
+) {
+  return (
     <input
       ref={ref}
       type={type}
@@ -321,14 +321,7 @@ const Input = (() => {
       className={`w-full h-9 ${hasIcon ? "pl-9" : "pl-3"} pr-3 rounded-md bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-colors ${className}`}
     />
   );
-  return Object.assign(
-    // eslint-disable-next-line react/display-name
-    require("react").forwardRef(Cmp) as React.ForwardRefExoticComponent<
-      Parameters<typeof Cmp>[0] & React.RefAttributes<HTMLInputElement>
-    >,
-    {},
-  );
-})();
+});
 
 function Select({
   value, onChange, children, hasIcon,
