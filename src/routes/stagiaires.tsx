@@ -224,7 +224,6 @@ function StagiairesPage() {
                           </div>
                           <div className="leading-tight">
                             <div className="text-sm font-medium text-foreground">{s.nom}</div>
-                            <div className="text-xs text-muted-foreground">{s.email}</div>
                           </div>
                         </div>
                       </td>
@@ -273,9 +272,9 @@ function StagiairesPage() {
                       </td>
                       <td className="px-4 md:px-5 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <ActionBtn icon={Eye} label="Voir" tone="default" />
-                          <ActionBtn icon={Pencil} label="Modifier" tone="default" />
-                          <ActionBtn icon={RotateCcw} label="Réinitialiser mot de passe" tone="default" />
+                          <ActionBtn icon={Eye} label="Voir" tone="blue" />
+                          <ActionBtn icon={Pencil} label="Modifier" tone="amber" />
+                          <ActionBtn icon={RotateCcw} label="Réinitialiser mot de passe" tone="violet" />
                           <ActionBtn icon={Trash2} label="Supprimer" tone="danger" />
                         </div>
                       </td>
@@ -341,16 +340,20 @@ function ActionBtn({
 }: {
   icon: typeof Eye;
   label: string;
-  tone?: "default" | "danger";
+  tone?: "default" | "blue" | "amber" | "violet" | "danger";
 }) {
-  const cls = tone === "danger"
-    ? "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-    : "text-muted-foreground hover:text-foreground hover:bg-muted/60";
+  const cls: Record<typeof tone, string> = {
+    default: "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+    blue: "text-[oklch(0.68_0.14_250)] hover:text-[oklch(0.60_0.16_250)] hover:bg-[oklch(0.68_0.14_250/0.12)]",
+    amber: "text-[oklch(0.72_0.15_80)] hover:text-[oklch(0.65_0.18_80)] hover:bg-[oklch(0.72_0.15_80/0.12)]",
+    violet: "text-[oklch(0.68_0.18_295)] hover:text-[oklch(0.60_0.20_295)] hover:bg-[oklch(0.68_0.18_295/0.12)]",
+    danger: "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+  };
   return (
     <button
       title={label}
       aria-label={label}
-      className={`group/btn h-8 w-8 grid place-items-center rounded-md transition-colors ${cls}`}
+      className={`group/btn h-8 w-8 grid place-items-center rounded-md transition-colors ${cls[tone]}`}
     >
       <Icon className="h-4 w-4" />
     </button>
