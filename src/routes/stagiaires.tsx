@@ -121,7 +121,10 @@ function StagiairesPage() {
                 {filtered.length} sur {MOCK.length} stagiaires
               </p>
             </div>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+            >
               <Plus className="h-4 w-4" />
               Nouveau stagiaire
             </button>
