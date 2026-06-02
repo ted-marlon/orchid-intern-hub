@@ -8,6 +8,7 @@ import {
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { NewStagiaireDialog } from "@/components/stagiaires/NewStagiaireDialog";
 
 export const Route = createFileRoute("/stagiaires")({
   head: () => ({
@@ -72,6 +73,7 @@ function StagiairesPage() {
   const [ecole, setEcole] = useState<string>("all");
   const [departement, setDepartement] = useState<string>("all");
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -119,7 +121,10 @@ function StagiairesPage() {
                 {filtered.length} sur {MOCK.length} stagiaires
               </p>
             </div>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+            >
               <Plus className="h-4 w-4" />
               Nouveau stagiaire
             </button>
@@ -307,6 +312,8 @@ function StagiairesPage() {
           </section>
         </main>
       </div>
+
+      <NewStagiaireDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
