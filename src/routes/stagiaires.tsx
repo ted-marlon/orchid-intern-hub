@@ -73,6 +73,7 @@ function StagiairesPage() {
   const [ecole, setEcole] = useState<string>("all");
   const [departement, setDepartement] = useState<string>("all");
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
