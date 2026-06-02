@@ -41,9 +41,8 @@ export function Sidebar({ open = true, onClose }: { open?: boolean; onClose?: ()
         className={`
           fixed md:static inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar overflow-hidden
           transition-[transform,width] duration-200 ease-out
-          w-64 md:w-60
-          ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-          ${open ? "md:w-60" : "md:w-0 md:border-r-0"}
+          w-64
+          ${open ? "translate-x-0 md:w-60" : "-translate-x-full md:translate-x-0 md:w-0 md:border-r-0"}
         `}
       >
 
