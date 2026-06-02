@@ -312,6 +312,8 @@ function StagiairesPage() {
           </section>
         </main>
       </div>
+
+      <NewStagiaireDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
