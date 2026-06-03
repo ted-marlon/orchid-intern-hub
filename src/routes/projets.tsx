@@ -420,6 +420,7 @@ function ProjetsPage() {
           )}
         </main>
       </div>
+      <NewProjetDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
