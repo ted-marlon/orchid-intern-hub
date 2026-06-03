@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  Search, Plus, LayoutGrid, List, Calendar, Users, MoreHorizontal,
+  Search, Plus, LayoutGrid, List, Calendar, MoreHorizontal,
   TrendingUp, AlertTriangle, CheckCircle2, BarChart3, Eye, Pencil, Trash2, X,
 } from "lucide-react";
 
