@@ -179,6 +179,7 @@ function ProjetsPage() {
   const [query, setQuery] = useState("");
   const [statut, setStatut] = useState<Statut | "Tous">("Tous");
   const [view, setView] = useState<"cartes" | "liste">("cartes");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return MOCK.filter((p) => {
