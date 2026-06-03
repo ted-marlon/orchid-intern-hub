@@ -8,6 +8,7 @@ import {
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { NewProjetDialog } from "@/components/projets/NewProjetDialog";
 
 export const Route = createFileRoute("/projets")({
   head: () => ({
@@ -178,6 +179,7 @@ function ProjetsPage() {
   const [query, setQuery] = useState("");
   const [statut, setStatut] = useState<Statut | "Tous">("Tous");
   const [view, setView] = useState<"cartes" | "liste">("cartes");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return MOCK.filter((p) => {
@@ -234,7 +236,7 @@ function ProjetsPage() {
                   <List className="h-3.5 w-3.5" /> Liste
                 </button>
               </div>
-              <button className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors shadow-sm">
+              <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors shadow-sm">
                 <Plus className="h-3.5 w-3.5" /> Nouveau projet
               </button>
             </div>
@@ -418,6 +420,7 @@ function ProjetsPage() {
           )}
         </main>
       </div>
+      <NewProjetDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
