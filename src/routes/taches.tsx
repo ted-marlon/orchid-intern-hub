@@ -267,7 +267,7 @@ function TachesPage() {
                   <ListIcon className="h-3.5 w-3.5" /> Liste
                 </button>
               </div>
-              <button className="h-9 px-3 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 shadow-sm transition-colors">
+              <button onClick={() => setCreateOpen(true)} className="h-9 px-3 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 shadow-sm transition-colors">
                 <Plus className="h-4 w-4" /> Nouvelle tâche
               </button>
             </div>
