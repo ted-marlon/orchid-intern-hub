@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import {
   X, FolderKanban, FileText, Users, Building2, Calendar, Flag,
-  Activity, Check, AlertCircle, Plus, Search,
+  Activity, Check, AlertCircle, Search,
 } from "lucide-react";
 
 type Statut = "En cours" | "En retard" | "Terminé" | "En pause";
@@ -125,8 +125,7 @@ export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
               <FolderKanban className="h-4 w-4" />
             </div>
             <div className="leading-tight">
-              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                <Plus className="h-4 w-4 text-[oklch(0.78_0.16_295)]" />
+              <h2 className="text-base font-semibold text-foreground">
                 Nouveau projet
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
