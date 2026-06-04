@@ -358,6 +358,13 @@ function TachesPage() {
           )}
         </main>
       </div>
+
+      <NewTacheDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        projets={PROJETS}
+        stagiaires={STAGIAIRES}
+      />
     </div>
   );
 }
