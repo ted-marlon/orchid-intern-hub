@@ -9,6 +9,7 @@ import {
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { NewTacheDialog } from "@/components/taches/NewTacheDialog";
 
 export const Route = createFileRoute("/taches")({
   head: () => ({
@@ -204,6 +205,7 @@ function TachesPage() {
   const [priorite, setPriorite] = useState<Priorite | "Toutes">("Toutes");
   const [projet, setProjet] = useState<string>("tous");
   const [view, setView] = useState<"kanban" | "liste">("kanban");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return MOCK.filter((t) => {
@@ -265,7 +267,7 @@ function TachesPage() {
                   <ListIcon className="h-3.5 w-3.5" /> Liste
                 </button>
               </div>
-              <button className="h-9 px-3 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 shadow-sm transition-colors">
+              <button onClick={() => setCreateOpen(true)} className="h-9 px-3 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 shadow-sm transition-colors">
                 <Plus className="h-4 w-4" /> Nouvelle tâche
               </button>
             </div>
@@ -356,6 +358,13 @@ function TachesPage() {
           )}
         </main>
       </div>
+
+      <NewTacheDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        projets={PROJETS}
+        stagiaires={STAGIAIRES}
+      />
     </div>
   );
 }
