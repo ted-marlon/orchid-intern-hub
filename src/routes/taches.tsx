@@ -9,6 +9,7 @@ import {
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { NewTacheDialog } from "@/components/taches/NewTacheDialog";
 
 export const Route = createFileRoute("/taches")({
   head: () => ({
