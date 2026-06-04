@@ -205,6 +205,7 @@ function TachesPage() {
   const [priorite, setPriorite] = useState<Priorite | "Toutes">("Toutes");
   const [projet, setProjet] = useState<string>("tous");
   const [view, setView] = useState<"kanban" | "liste">("kanban");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return MOCK.filter((t) => {
