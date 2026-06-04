@@ -273,10 +273,10 @@ function TachesPage() {
 
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <KpiCard label="Total" value={String(kpis.total)} accent="primary" icon={FolderKanban} />
-            <KpiCard label="En cours" value={String(kpis.enCours)} accent="primary" icon={Clock} />
-            <KpiCard label="En retard" value={String(kpis.enRetard)} accent="destructive" icon={AlertTriangle} />
-            <KpiCard label="Terminées" value={String(kpis.terminees)} accent="success" icon={CheckCircle2} />
+            <KpiCard label="Total" value={String(kpis.total)} iconTone="violet" icon={FolderKanban} />
+            <KpiCard label="En cours" value={String(kpis.enCours)} iconTone="blue" icon={Clock} />
+            <KpiCard label="En retard" value={String(kpis.enRetard)} iconTone="red" icon={AlertTriangle} />
+            <KpiCard label="Terminées" value={String(kpis.terminees)} iconTone="green" icon={CheckCircle2} />
           </div>
 
           {/* Filters */}
