@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import {
   X, FolderKanban, FileText, Users, Building2, Calendar, Flag,
-  Activity, Check, AlertCircle, Plus, Search,
+  Activity, Check, AlertCircle, Search,
 } from "lucide-react";
 
 type Statut = "En cours" | "En retard" | "Terminé" | "En pause";
