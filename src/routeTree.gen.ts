@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TachesRouteImport } from './routes/taches'
 import { Route as StagiairesRouteImport } from './routes/stagiaires'
 import { Route as ProjetsRouteImport } from './routes/projets'
+import { Route as PointageRouteImport } from './routes/pointage'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TachesRoute = TachesRouteImport.update({
@@ -29,6 +30,11 @@ const ProjetsRoute = ProjetsRouteImport.update({
   path: '/projets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PointageRoute = PointageRouteImport.update({
+  id: '/pointage',
+  path: '/pointage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/stagiaires': typeof StagiairesRoute
   '/taches': typeof TachesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/stagiaires': typeof StagiairesRoute
   '/taches': typeof TachesRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/stagiaires': typeof StagiairesRoute
   '/taches': typeof TachesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/projets' | '/stagiaires' | '/taches'
+  fullPaths: '/' | '/pointage' | '/projets' | '/stagiaires' | '/taches'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/projets' | '/stagiaires' | '/taches'
-  id: '__root__' | '/' | '/projets' | '/stagiaires' | '/taches'
+  to: '/' | '/pointage' | '/projets' | '/stagiaires' | '/taches'
+  id: '__root__' | '/' | '/pointage' | '/projets' | '/stagiaires' | '/taches'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PointageRoute: typeof PointageRoute
   ProjetsRoute: typeof ProjetsRoute
   StagiairesRoute: typeof StagiairesRoute
   TachesRoute: typeof TachesRoute
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjetsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pointage': {
+      id: '/pointage'
+      path: '/pointage'
+      fullPath: '/pointage'
+      preLoaderRoute: typeof PointageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PointageRoute: PointageRoute,
   ProjetsRoute: ProjetsRoute,
   StagiairesRoute: StagiairesRoute,
   TachesRoute: TachesRoute,
