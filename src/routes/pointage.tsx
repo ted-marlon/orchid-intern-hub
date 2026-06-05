@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   QrCode, Users, LogIn, LogOut, Clock, Search,
-  CheckCircle2, AlertTriangle, XCircle, Calendar, TrendingUp, Filter,
+  CheckCircle2, AlertTriangle, XCircle, Filter,
   Printer, Copy, Eye,
 } from "lucide-react";
 
