@@ -321,68 +321,6 @@ function PointagePage() {
             </div>
           </section>
 
-          {/* Timeline of the day */}
-          <section className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground inline-flex items-center gap-2">
-                  <Calendar className="h-3.5 w-3.5 text-primary" />
-                  Chronologie de la journée
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Heures d'arrivée et de départ par stagiaire (08:00 – 18:00)</p>
-              </div>
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <TrendingUp className="h-3 w-3" />
-                Heure de pointe : 09:00
-              </span>
-            </div>
-
-            {/* Hour scale */}
-            <div className="relative">
-              <div className="grid grid-cols-10 text-[10px] text-muted-foreground tabular-nums mb-1 pl-32">
-                {Array.from({ length: 10 }, (_, i) => 8 + i).map((h) => (
-                  <div key={h} className="border-l border-border/60 pl-1">{h}h</div>
-                ))}
-              </div>
-
-              <ul className="space-y-1.5">
-                {POINTAGES.filter(p => p.entree).map((p) => {
-                  const [h, m] = (p.entree as string).split(":").map(Number);
-                  const start = ((h + m / 60) - 8) / 10 * 100;
-                  const endRaw = p.sortie
-                    ? (() => { const [eh, em] = p.sortie.split(":").map(Number); return ((eh + em / 60) - 8) / 10 * 100; })()
-                    : ((13 + 4 / 60) - 8) / 10 * 100; // "now" 13:04
-                  const width = Math.max(2, endRaw - start);
-                  const ongoing = !p.sortie;
-                  return (
-                    <li key={p.id} className="flex items-center gap-3">
-                      <div className="w-32 flex items-center gap-2 shrink-0">
-                        <div className={`h-6 w-6 rounded-full grid place-items-center text-[10px] font-medium ${p.couleur}`}>
-                          {p.initiale}
-                        </div>
-                        <span className="text-xs text-foreground truncate">{p.nom}</span>
-                      </div>
-                      <div className="flex-1 relative h-6 rounded bg-muted/30 border border-border/60">
-                        <div
-                          className={`absolute top-0 bottom-0 rounded ${
-                            ongoing
-                              ? "bg-gradient-to-r from-primary/40 to-primary/20 border border-primary/40"
-                              : "bg-gradient-to-r from-success/40 to-success/20 border border-success/40"
-                          }`}
-                          style={{ left: `${start}%`, width: `${width}%` }}
-                        >
-                          <div className="absolute inset-0 flex items-center justify-between px-1.5 text-[9px] tabular-nums">
-                            <span className="text-foreground/80">{p.entree}</span>
-                            {p.sortie && <span className="text-foreground/80">{p.sortie}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </section>
         </main>
       </div>
     </div>
