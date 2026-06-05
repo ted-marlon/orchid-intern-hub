@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   QrCode, Users, LogIn, LogOut, Clock, Search,
-  CheckCircle2, AlertTriangle, XCircle, Calendar, TrendingUp, Filter,
+  CheckCircle2, AlertTriangle, XCircle, Filter,
   Printer, Copy, Eye,
 } from "lucide-react";
 
@@ -44,16 +44,6 @@ const POINTAGES: Pointage[] = [
   { id: "6", nom: "Salma Tazi", initiale: "ST", couleur: "bg-warning/20 text-warning", departement: "Comptabilité", entree: null, sortie: null, duree: "—", statut: "Absent" },
 ];
 
-type Event = { id: string; nom: string; initiale: string; couleur: string; type: "Entrée" | "Sortie"; heure: string; departement: string };
-const EVENTS: Event[] = [
-  { id: "e1", nom: "Rayan Berrada", initiale: "RB", couleur: "bg-primary/20 text-primary", type: "Sortie", heure: "13:02", departement: "RH" },
-  { id: "e2", nom: "Omar El Idrissi", initiale: "OE", couleur: "bg-success/20 text-success", type: "Sortie", heure: "12:45", departement: "IT" },
-  { id: "e3", nom: "Mehdi Cherkaoui", initiale: "MC", couleur: "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)]", type: "Entrée", heure: "09:32", departement: "Projets" },
-  { id: "e4", nom: "Omar El Idrissi", initiale: "OE", couleur: "bg-success/20 text-success", type: "Entrée", heure: "09:05", departement: "IT" },
-  { id: "e5", nom: "Adam Fassi", initiale: "AF", couleur: "bg-success/20 text-success", type: "Entrée", heure: "08:58", departement: "IT" },
-  { id: "e6", nom: "Yasmine Bennani", initiale: "YB", couleur: "bg-primary/20 text-primary", type: "Entrée", heure: "08:52", departement: "Marketing" },
-  { id: "e7", nom: "Rayan Berrada", initiale: "RB", couleur: "bg-primary/20 text-primary", type: "Entrée", heure: "08:45", departement: "RH" },
-];
 
 function statutBadge(s: Statut) {
   const m: Record<Statut, string> = {
@@ -253,47 +243,8 @@ function PointagePage() {
               </div>
             </div>
 
-            {/* Right column: Activity + QR */}
+            {/* Right column: QR */}
             <div className="space-y-4">
-              {/* Live activity */}
-              <div className="rounded-xl border border-border bg-card">
-                <div className="flex items-center justify-between p-4 pb-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">Activité en direct</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 inline-flex items-center gap-1.5">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-success"></span>
-                      </span>
-                      Temps réel
-                    </p>
-                  </div>
-                  <button className="text-xs text-primary hover:underline">Tout voir →</button>
-                </div>
-                <ul className="divide-y divide-border max-h-[400px] overflow-y-auto">
-                  {EVENTS.map((e) => (
-                    <li key={e.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors">
-                      <div className={`h-8 w-8 rounded-full grid place-items-center text-xs font-medium shrink-0 ${e.couleur}`}>
-                        {e.initiale}
-                      </div>
-                      <div className="flex-1 min-w-0 leading-tight">
-                        <div className="text-sm text-foreground truncate">{e.nom}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">{e.departement}</div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className={`inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide ${
-                          e.type === "Entrée" ? "text-success" : "text-[oklch(0.78_0.16_295)]"
-                        }`}>
-                          {e.type === "Entrée" ? <LogIn className="h-2.5 w-2.5" /> : <LogOut className="h-2.5 w-2.5" />}
-                          {e.type}
-                        </div>
-                        <div className="text-xs tabular-nums text-foreground">{e.heure}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
               {/* Admin QR card */}
               <div className="rounded-xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-5">
                 <div className="flex items-center gap-2 mb-1">
@@ -331,68 +282,6 @@ function PointagePage() {
             </div>
           </section>
 
-          {/* Timeline of the day */}
-          <section className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground inline-flex items-center gap-2">
-                  <Calendar className="h-3.5 w-3.5 text-primary" />
-                  Chronologie de la journée
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Heures d'arrivée et de départ par stagiaire (08:00 – 18:00)</p>
-              </div>
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <TrendingUp className="h-3 w-3" />
-                Heure de pointe : 09:00
-              </span>
-            </div>
-
-            {/* Hour scale */}
-            <div className="relative">
-              <div className="grid grid-cols-10 text-[10px] text-muted-foreground tabular-nums mb-1 pl-32">
-                {Array.from({ length: 10 }, (_, i) => 8 + i).map((h) => (
-                  <div key={h} className="border-l border-border/60 pl-1">{h}h</div>
-                ))}
-              </div>
-
-              <ul className="space-y-1.5">
-                {POINTAGES.filter(p => p.entree).map((p) => {
-                  const [h, m] = (p.entree as string).split(":").map(Number);
-                  const start = ((h + m / 60) - 8) / 10 * 100;
-                  const endRaw = p.sortie
-                    ? (() => { const [eh, em] = p.sortie.split(":").map(Number); return ((eh + em / 60) - 8) / 10 * 100; })()
-                    : ((13 + 4 / 60) - 8) / 10 * 100; // "now" 13:04
-                  const width = Math.max(2, endRaw - start);
-                  const ongoing = !p.sortie;
-                  return (
-                    <li key={p.id} className="flex items-center gap-3">
-                      <div className="w-32 flex items-center gap-2 shrink-0">
-                        <div className={`h-6 w-6 rounded-full grid place-items-center text-[10px] font-medium ${p.couleur}`}>
-                          {p.initiale}
-                        </div>
-                        <span className="text-xs text-foreground truncate">{p.nom}</span>
-                      </div>
-                      <div className="flex-1 relative h-6 rounded bg-muted/30 border border-border/60">
-                        <div
-                          className={`absolute top-0 bottom-0 rounded ${
-                            ongoing
-                              ? "bg-gradient-to-r from-primary/40 to-primary/20 border border-primary/40"
-                              : "bg-gradient-to-r from-success/40 to-success/20 border border-success/40"
-                          }`}
-                          style={{ left: `${start}%`, width: `${width}%` }}
-                        >
-                          <div className="absolute inset-0 flex items-center justify-between px-1.5 text-[9px] tabular-nums">
-                            <span className="text-foreground/80">{p.entree}</span>
-                            {p.sortie && <span className="text-foreground/80">{p.sortie}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </section>
         </main>
       </div>
     </div>
