@@ -243,47 +243,8 @@ function PointagePage() {
               </div>
             </div>
 
-            {/* Right column: Activity + QR */}
+            {/* Right column: QR */}
             <div className="space-y-4">
-              {/* Live activity */}
-              <div className="rounded-xl border border-border bg-card">
-                <div className="flex items-center justify-between p-4 pb-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">Activité en direct</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 inline-flex items-center gap-1.5">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-success"></span>
-                      </span>
-                      Temps réel
-                    </p>
-                  </div>
-                  <button className="text-xs text-primary hover:underline">Tout voir →</button>
-                </div>
-                <ul className="divide-y divide-border max-h-[400px] overflow-y-auto">
-                  {EVENTS.map((e) => (
-                    <li key={e.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors">
-                      <div className={`h-8 w-8 rounded-full grid place-items-center text-xs font-medium shrink-0 ${e.couleur}`}>
-                        {e.initiale}
-                      </div>
-                      <div className="flex-1 min-w-0 leading-tight">
-                        <div className="text-sm text-foreground truncate">{e.nom}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">{e.departement}</div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className={`inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide ${
-                          e.type === "Entrée" ? "text-success" : "text-[oklch(0.78_0.16_295)]"
-                        }`}>
-                          {e.type === "Entrée" ? <LogIn className="h-2.5 w-2.5" /> : <LogOut className="h-2.5 w-2.5" />}
-                          {e.type}
-                        </div>
-                        <div className="text-xs tabular-nums text-foreground">{e.heure}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
               {/* Admin QR card */}
               <div className="rounded-xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-5">
                 <div className="flex items-center gap-2 mb-1">
