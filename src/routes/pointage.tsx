@@ -120,14 +120,6 @@ function PointagePage() {
                   </button>
                 ))}
               </div>
-              <button className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted/60 text-foreground transition-colors">
-                <Download className="h-3.5 w-3.5" />
-                Exporter
-              </button>
-              <button className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-                <RefreshCw className="h-3.5 w-3.5" />
-                Actualiser
-              </button>
             </div>
           </section>
 
