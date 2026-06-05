@@ -44,16 +44,6 @@ const POINTAGES: Pointage[] = [
   { id: "6", nom: "Salma Tazi", initiale: "ST", couleur: "bg-warning/20 text-warning", departement: "Comptabilité", entree: null, sortie: null, duree: "—", statut: "Absent" },
 ];
 
-type Event = { id: string; nom: string; initiale: string; couleur: string; type: "Entrée" | "Sortie"; heure: string; departement: string };
-const EVENTS: Event[] = [
-  { id: "e1", nom: "Rayan Berrada", initiale: "RB", couleur: "bg-primary/20 text-primary", type: "Sortie", heure: "13:02", departement: "RH" },
-  { id: "e2", nom: "Omar El Idrissi", initiale: "OE", couleur: "bg-success/20 text-success", type: "Sortie", heure: "12:45", departement: "IT" },
-  { id: "e3", nom: "Mehdi Cherkaoui", initiale: "MC", couleur: "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)]", type: "Entrée", heure: "09:32", departement: "Projets" },
-  { id: "e4", nom: "Omar El Idrissi", initiale: "OE", couleur: "bg-success/20 text-success", type: "Entrée", heure: "09:05", departement: "IT" },
-  { id: "e5", nom: "Adam Fassi", initiale: "AF", couleur: "bg-success/20 text-success", type: "Entrée", heure: "08:58", departement: "IT" },
-  { id: "e6", nom: "Yasmine Bennani", initiale: "YB", couleur: "bg-primary/20 text-primary", type: "Entrée", heure: "08:52", departement: "Marketing" },
-  { id: "e7", nom: "Rayan Berrada", initiale: "RB", couleur: "bg-primary/20 text-primary", type: "Entrée", heure: "08:45", departement: "RH" },
-];
 
 function statutBadge(s: Statut) {
   const m: Record<Statut, string> = {
