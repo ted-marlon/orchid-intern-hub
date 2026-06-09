@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  FileText, FileCheck2, Upload, UserCheck, Search, Filter,
+  FileText, FileCheck2, UserCheck, Search, Filter,
   CheckCircle2, Clock, AlertCircle, FileWarning, Mail,
   MessageCircle, Paperclip, Eye, Download, MoreHorizontal,
-  CalendarDays, Send, X, FilePlus2, Bell, ShieldCheck,
+  CalendarDays, Send, X, Bell, ShieldCheck,
 } from "lucide-react";
 
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/rapports")({
 /* ------------------------ Types & mock data ------------------------ */
 
 type StatutDepot = "Déposé" | "Manquant" | "En retard" | "Validé" | "En attente";
-type Tab = "journaliers" | "finaux" | "deposer" | "suivi";
+type Tab = "journaliers" | "finaux" | "suivi";
 
 type Stagiaire = { id: string; nom: string; initiale: string; couleur: string; projet: string };
 
@@ -117,7 +117,6 @@ function RapportsPage() {
   const [tab, setTab] = useState<Tab>("journaliers");
   const [query, setQuery] = useState("");
   const [statutFilter, setStatutFilter] = useState<"Tous" | StatutDepot>("Tous");
-  const [depotOpen, setDepotOpen] = useState(false);
 
   const kpis = {
     deposes: JOURNALIERS.filter((j) => j.statut === "Déposé" || j.statut === "En retard").length,
@@ -158,55 +157,9 @@ function RapportsPage() {
                 Pilotez les rapports journaliers, les mémoires de fin de stage et les notifications associées.
               </p>
             </div>
-            <button
-              onClick={() => { setTab("deposer"); setDepotOpen(true); }}
-              className="h-9 px-3 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 shadow-sm transition-colors"
-            >
-              <Upload className="h-4 w-4" /> Déposer Rapport Final
-            </button>
           </div>
 
-          {/* Notification banners */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
-            <div className="rounded-xl border border-success/25 bg-success/[0.06] p-4 flex items-start gap-3">
-              <div className="h-9 w-9 rounded-md bg-success/15 ring-1 ring-inset ring-success/25 grid place-items-center shrink-0">
-                <MessageCircle className="h-4 w-4 text-success" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-foreground">Rappel automatique WhatsApp activé à 17h00</div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Les stagiaires n'ayant pas déposé leur rapport reçoivent un message automatique chaque soir.
-                </p>
-              </div>
-              <button className="text-[11px] font-medium text-success hover:text-success/80 inline-flex items-center gap-1 shrink-0">
-                <Bell className="h-3 w-3" /> Configurer
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-primary/25 bg-primary/[0.06] p-4 flex items-start gap-3">
-              <div className="h-9 w-9 rounded-md bg-primary/15 ring-1 ring-inset ring-primary/25 grid place-items-center shrink-0">
-                <Mail className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-primary">Alerte Email Admin activée</div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  <span className="font-medium text-foreground">md@orchidisland.immo</span> reçoit un email à chaque dépôt de rapport.
-                </p>
-              </div>
-              <button className="h-8 px-3 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 shrink-0">
-                <Send className="h-3.5 w-3.5" /> Envoyer résumé
-              </button>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="rounded-xl border border-border bg-card p-1 flex flex-wrap gap-1">
-            <TabButton active={tab === "journaliers"} onClick={() => setTab("journaliers")} icon={FileText} label="Rapports Journaliers" />
-            <TabButton active={tab === "finaux"}      onClick={() => setTab("finaux")}      icon={FileCheck2} label="Rapports Finaux de Stage" />
-            <TabButton active={tab === "deposer"}     onClick={() => setTab("deposer")}     icon={Paperclip} label="Déposer un Rapport" />
-            <TabButton active={tab === "suivi"}       onClick={() => setTab("suivi")}       icon={UserCheck} label="Suivi par Stagiaire" />
-          </div>
-
+        
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
             <KpiCard label="Rapports déposés aujourd'hui" value={String(kpis.deposes)} iconTone="green" icon={CheckCircle2} />
@@ -214,6 +167,13 @@ function RapportsPage() {
             <KpiCard label="Rapports finaux déposés"     value={String(kpis.finauxDeposes)} iconTone="blue" icon={FileCheck2} />
             <KpiCard label="Rapports finaux validés"     value={String(kpis.finauxValides)} iconTone="green" icon={ShieldCheck} />
             <KpiCard label="En attente de validation"    value={String(kpis.enAttente)} iconTone="amber" icon={Clock} />
+          </div>
+
+          {/* Tabs */}
+          <div className="rounded-xl border border-border bg-card p-1 flex flex-wrap gap-1">
+            <TabButton active={tab === "journaliers"} onClick={() => setTab("journaliers")} icon={FileText} label="Rapports Journaliers" />
+            <TabButton active={tab === "finaux"}      onClick={() => setTab("finaux")}      icon={FileCheck2} label="Rapports Finaux de Stage" />
+            <TabButton active={tab === "suivi"}       onClick={() => setTab("suivi")}       icon={UserCheck} label="Suivi par Stagiaire" />
           </div>
 
           {/* Tab content */}
@@ -226,7 +186,6 @@ function RapportsPage() {
             />
           )}
           {tab === "finaux" && <FinauxTab rows={FINAUX} />}
-          {tab === "deposer" && <DeposerTab open={depotOpen} onClose={() => setDepotOpen(false)} />}
           {tab === "suivi" && <SuiviTab />}
         </main>
       </div>
@@ -477,106 +436,6 @@ function FinauxTab({ rows }: { rows: RapportFinal[] }) {
             </article>
           );
         })}
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------ Tab: Déposer ------------------------ */
-
-function DeposerTab({ open: _open, onClose: _onClose }: { open: boolean; onClose: () => void }) {
-  const [type, setType] = useState<"journalier" | "final">("journalier");
-  const [stagiaire, setStagiaire] = useState(STAGIAIRES[0].id);
-  const [note, setNote] = useState("");
-
-  return (
-    <section className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-4 md:px-5 py-3.5 border-b border-border flex items-center gap-2.5">
-        <Paperclip className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Déposer un rapport</h3>
-      </div>
-
-      <div className="p-4 md:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-        {/* Form */}
-        <div className="space-y-4">
-          <Field label="Type de rapport">
-            <div className="grid grid-cols-2 gap-2">
-              {(["journalier", "final"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`h-9 rounded-md text-xs font-medium ring-1 ring-inset transition-colors ${
-                    type === t
-                      ? "bg-primary/15 text-primary ring-primary/30"
-                      : "bg-background text-muted-foreground ring-border hover:text-foreground hover:bg-muted/40"
-                  }`}
-                >
-                  {t === "journalier" ? "Rapport journalier" : "Rapport final de stage"}
-                </button>
-              ))}
-            </div>
-          </Field>
-
-          <Field label="Stagiaire">
-            <select
-              value={stagiaire}
-              onChange={(e) => setStagiaire(e.target.value)}
-              className="w-full h-9 px-3 rounded-md bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              {STAGIAIRES.map((s) => (
-                <option key={s.id} value={s.id}>{s.nom} — {s.projet}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Date">
-            <input
-              type="date"
-              defaultValue={TODAY}
-              className="w-full h-9 px-3 rounded-md bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </Field>
-
-          <Field label="Note (optionnel)">
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              placeholder="Résumé du rapport, points clés…"
-              className="w-full px-3 py-2 rounded-md bg-background border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring resize-none"
-            />
-          </Field>
-        </div>
-
-        {/* Dropzone */}
-        <div className="space-y-4">
-          <Field label="Fichier (PDF, DOCX — max 20 Mo)">
-            <label className="flex flex-col items-center justify-center h-48 rounded-xl border-2 border-dashed border-border bg-background/40 hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer">
-              <div className="h-11 w-11 rounded-full bg-primary/15 ring-1 ring-inset ring-primary/25 grid place-items-center mb-2">
-                <FilePlus2 className="h-5 w-5 text-primary" />
-              </div>
-              <div className="text-sm font-medium text-foreground">Glissez votre fichier ici</div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">ou cliquez pour parcourir</div>
-              <input type="file" className="hidden" accept=".pdf,.doc,.docx" />
-            </label>
-          </Field>
-
-          <div className="rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground leading-relaxed">
-            <p className="text-foreground/80 font-medium mb-1 inline-flex items-center gap-1.5">
-              <ShieldCheck className="h-3 w-3 text-success" /> Notifications automatiques
-            </p>
-            Un email sera envoyé à <span className="text-foreground">md@orchidisland.immo</span> et un message WhatsApp confirmera le dépôt au stagiaire concerné.
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
-            <button className="h-9 px-3 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted/40">
-              Annuler
-            </button>
-            <button className="h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5">
-              <Upload className="h-4 w-4" /> Déposer
-            </button>
-          </div>
-        </div>
       </div>
     </section>
   );
