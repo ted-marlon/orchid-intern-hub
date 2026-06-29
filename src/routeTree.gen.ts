@@ -14,6 +14,7 @@ import { Route as StagiairesRouteImport } from './routes/stagiaires'
 import { Route as RapportsRouteImport } from './routes/rapports'
 import { Route as ProjetsRouteImport } from './routes/projets'
 import { Route as PointageRouteImport } from './routes/pointage'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AlertesRouteImport } from './routes/alertes'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -42,6 +43,11 @@ const PointageRoute = PointageRouteImport.update({
   path: '/pointage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AlertesRoute = AlertesRouteImport.update({
   id: '/alertes',
   path: '/alertes',
@@ -56,6 +62,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alertes': typeof AlertesRoute
+  '/login': typeof LoginRoute
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alertes': typeof AlertesRoute
+  '/login': typeof LoginRoute
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alertes': typeof AlertesRoute
+  '/login': typeof LoginRoute
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/alertes'
+    | '/login'
     | '/pointage'
     | '/projets'
     | '/rapports'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/alertes'
+    | '/login'
     | '/pointage'
     | '/projets'
     | '/rapports'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/alertes'
+    | '/login'
     | '/pointage'
     | '/projets'
     | '/rapports'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertesRoute: typeof AlertesRoute
+  LoginRoute: typeof LoginRoute
   PointageRoute: typeof PointageRoute
   ProjetsRoute: typeof ProjetsRoute
   RapportsRoute: typeof RapportsRoute
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PointageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/alertes': {
       id: '/alertes'
       path: '/alertes'
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertesRoute: AlertesRoute,
+  LoginRoute: LoginRoute,
   PointageRoute: PointageRoute,
   ProjetsRoute: ProjetsRoute,
   RapportsRoute: RapportsRoute,

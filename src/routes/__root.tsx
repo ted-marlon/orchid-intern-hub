@@ -4,13 +4,16 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { getAuthToken, verifyAuthSession, clearAuthSession } from "@/lib/api/auth";
 
 function NotFoundComponent() {
   return (
@@ -115,11 +118,70 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkAuth() {
+      const token = getAuthToken();
+
+      if (pathname === "/login") {
+        if (token) {
+          const isValid = await verifyAuthSession();
+          if (cancelled) return;
+          if (isValid) {
+            await router.navigate({ to: "/" });
+          } else {
+            clearAuthSession();
+          }
+        }
+        setIsCheckingAuth(false);
+        return;
+      }
+
+      if (!token) {
+        await router.navigate({ to: "/login" });
+        if (!cancelled) setIsCheckingAuth(false);
+        return;
+      }
+
+      const isValid = await verifyAuthSession();
+      if (cancelled) return;
+
+      if (!isValid) {
+        clearAuthSession();
+        await router.navigate({ to: "/login" });
+      }
+
+      setIsCheckingAuth(false);
+    }
+
+    checkAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, router]);
+
+  if (isCheckingAuth && pathname !== "/login") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-4">
+        <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center animate-pulse">
+          <span className="text-primary font-bold text-sm">OI</span>
+        </div>
+        <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <Toaster />
     </QueryClientProvider>
   );
 }

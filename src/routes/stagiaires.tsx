@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Search, SlidersHorizontal, Plus, Eye, Pencil, RotateCcw, Trash2,
   Users, UserCheck, UserPlus, Clock, X, ChevronLeft, ChevronRight,
@@ -9,6 +9,9 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { NewStagiaireDialog } from "@/components/stagiaires/NewStagiaireDialog";
+import { ViewStagiaireDialog } from "@/components/stagiaires/ViewStagiaireDialog";
+import { EditStagiaireDialog } from "@/components/stagiaires/EditStagiaireDialog";
+import { getAuthToken } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/stagiaires")({
   head: () => ({
@@ -20,7 +23,7 @@ export const Route = createFileRoute("/stagiaires")({
   component: StagiairesPage,
 });
 
-type Statut = "Accepté" | "En attente" | "Refusé" | "Terminé";
+type Statut = "En cours" | "Terminé";
 type Stagiaire = {
   id: string;
   nom: string;
@@ -38,27 +41,14 @@ type Stagiaire = {
   couleur: string;
 };
 
-const MOCK: Stagiaire[] = [
-  { id: "1", nom: "Yasmine Bennani", email: "y.bennani@orchidisland.immo", ecole: "ENCG Casablanca", formation: "Marketing Digital", departement: "Marketing", statut: "Accepté", absences: 0, absencesMax: 3, stageDebut: "01/05/2026", stageFin: "30/07/2026", rapport: "Non déposé", initiale: "YB", couleur: "bg-primary/20 text-primary" },
-  { id: "2", nom: "Omar El Idrissi", email: "o.elidrissi@orchidisland.immo", ecole: "EMI Rabat", formation: "Génie Logiciel", departement: "IT", statut: "Accepté", absences: 1, absencesMax: 3, stageDebut: "15/04/2026", stageFin: "15/08/2026", rapport: "En relecture", initiale: "OE", couleur: "bg-success/20 text-success" },
-  { id: "3", nom: "Salma Tazi", email: "s.tazi@orchidisland.immo", ecole: "ISCAE", formation: "Finance", departement: "Comptabilité", statut: "En attente", absences: 0, absencesMax: 3, stageDebut: "—", stageFin: "—", rapport: "Non déposé", initiale: "ST", couleur: "bg-warning/20 text-warning" },
-  { id: "4", nom: "Mehdi Cherkaoui", email: "m.cherkaoui@orchidisland.immo", ecole: "ENSA Marrakech", formation: "Architecture", departement: "Projets", statut: "Accepté", absences: 2, absencesMax: 3, stageDebut: "01/03/2026", stageFin: "31/05/2026", rapport: "Déposé", initiale: "MC", couleur: "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)]" },
-  { id: "5", nom: "Lina Amrani", email: "l.amrani@orchidisland.immo", ecole: "Sup de Co", formation: "Commerce International", departement: "Ventes", statut: "Refusé", absences: 0, absencesMax: 3, stageDebut: "—", stageFin: "—", rapport: "Non déposé", initiale: "LA", couleur: "bg-destructive/20 text-destructive" },
-  { id: "6", nom: "Rayan Berrada", email: "r.berrada@orchidisland.immo", ecole: "ENCG Settat", formation: "RH", departement: "RH", statut: "Accepté", absences: 0, absencesMax: 3, stageDebut: "01/06/2026", stageFin: "31/08/2026", rapport: "Non déposé", initiale: "RB", couleur: "bg-primary/20 text-primary" },
-  { id: "7", nom: "Hiba Naciri", email: "h.naciri@orchidisland.immo", ecole: "Al Akhawayn", formation: "Communication", departement: "Marketing", statut: "Terminé", absences: 1, absencesMax: 3, stageDebut: "01/01/2026", stageFin: "31/03/2026", rapport: "Déposé", initiale: "HN", couleur: "bg-muted text-muted-foreground" },
-  { id: "8", nom: "Adam Fassi", email: "a.fassi@orchidisland.immo", ecole: "ENSAM", formation: "Data Science", departement: "IT", statut: "Accepté", absences: 0, absencesMax: 3, stageDebut: "15/05/2026", stageFin: "15/09/2026", rapport: "Non déposé", initiale: "AF", couleur: "bg-success/20 text-success" },
-];
-
-const STATUTS: Statut[] = ["Accepté", "En attente", "Refusé", "Terminé"];
+const STATUTS: Statut[] = ["En cours", "Terminé"];
 const ECOLES = ["ENCG Casablanca", "EMI Rabat", "ISCAE", "ENSA Marrakech", "Sup de Co", "ENCG Settat", "Al Akhawayn", "ENSAM"];
 const DEPARTEMENTS = ["Marketing", "IT", "Comptabilité", "Projets", "Ventes", "RH"];
 
 function statutBadge(s: Statut) {
   const map: Record<Statut, string> = {
-    "Accepté": "bg-success/15 text-success ring-success/25",
-    "En attente": "bg-warning/15 text-warning ring-warning/25",
-    "Refusé": "bg-destructive/15 text-destructive ring-destructive/25",
-    "Terminé": "bg-muted text-muted-foreground ring-border",
+    "Terminé": "bg-success/15 text-success ring-success/25",
+    "En cours": "bg-warning/15 text-warning ring-warning/25",
   };
   return map[s];
 }
@@ -74,10 +64,83 @@ function StagiairesPage() {
   const [departement, setDepartement] = useState<string>("all");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedStagiaireId, setSelectedStagiaireId] = useState<string | null>(null);
+  const [stagiaires, setStagiaires] = useState<Stagiaire[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStagiaires = () => {
+    setLoading(true);
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    fetch('http://127.0.0.1:8000/api/stagiaires/list_for_dashboard/', { headers })
+      .then(res => res.json())
+      .then(data => {
+        setStagiaires(data.stagiaires || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching stagiaires:', err);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchStagiaires();
+  }, []);
+
+  const handleCreateStagiaire = () => {
+    fetchStagiaires();
+  };
+
+  const handleViewStagiaire = (id: string) => {
+    setSelectedStagiaireId(id);
+    setViewOpen(true);
+  };
+
+  const handleEditStagiaire = (id: string) => {
+    setSelectedStagiaireId(id);
+    setEditOpen(true);
+  };
+
+  const handleDeleteStagiaire = async (id: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce stagiaire ?')) return;
+    
+    try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`http://127.0.0.1:8000/api/stagiaires/${id}/`, {
+        method: 'DELETE',
+        headers,
+      });
+      
+      if (response.ok) {
+        fetchStagiaires();
+      } else {
+        alert('Erreur lors de la suppression du stagiaire');
+      }
+    } catch (err) {
+      console.error('Error deleting stagiaire:', err);
+      alert('Erreur lors de la suppression du stagiaire');
+    }
+  };
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return MOCK.filter((s) => {
+    return stagiaires.filter((s) => {
       if (statut !== "all" && s.statut !== statut) return false;
       if (ecole !== "all" && s.ecole !== ecole) return false;
       if (departement !== "all" && s.departement !== departement) return false;
@@ -90,17 +153,17 @@ function StagiairesPage() {
         s.departement.toLowerCase().includes(needle)
       );
     });
-  }, [q, statut, ecole, departement]);
+  }, [q, statut, ecole, departement, stagiaires]);
 
   const activeFiltersCount = [statut, ecole, departement].filter((v) => v !== "all").length;
 
   const kpis = useMemo(() => {
-    const total = MOCK.length;
-    const actifs = MOCK.filter((s) => s.statut === "Accepté").length;
-    const enAttente = MOCK.filter((s) => s.statut === "En attente").length;
-    const nouveaux = MOCK.filter((s) => s.stageDebut.includes("/05/2026") || s.stageDebut.includes("/06/2026")).length;
-    return { total, actifs, enAttente, nouveaux };
-  }, []);
+    const total = stagiaires.length;
+    const actifs = stagiaires.filter((s) => s.statut === "En cours").length;
+    const termines = stagiaires.filter((s) => s.statut === "Terminé").length;
+    const nouveaux = stagiaires.filter((s) => s.stageDebut.includes("/05/2026") || s.stageDebut.includes("/06/2026")).length;
+    return { total, actifs, termines, nouveaux };
+  }, [stagiaires]);
 
   function resetFilters() {
     setQ(""); setStatut("all"); setEcole("all"); setDepartement("all");
@@ -118,7 +181,7 @@ function StagiairesPage() {
             <div>
               <h2 className="text-lg font-semibold text-foreground">Gestion des stagiaires</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {filtered.length} sur {MOCK.length} stagiaires
+                {filtered.length} sur {stagiaires.length} stagiaires
               </p>
             </div>
             <button
@@ -133,8 +196,8 @@ function StagiairesPage() {
           {/* KPIs */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard label="Total" value={kpis.total} icon={Users} iconTone="blue" />
-            <KpiCard label="Actifs" value={kpis.actifs} icon={UserCheck} iconTone="green" />
-            <KpiCard label="En attente" value={kpis.enAttente} icon={Clock} iconTone="amber" />
+            <KpiCard label="Actifs" value={kpis.actifs} icon={Clock} iconTone="amber" />
+            <KpiCard label="Terminés" value={kpis.termines} icon={UserCheck} iconTone="green"/>
             <KpiCard label="Nouveaux ce trimestre" value={kpis.nouveaux} icon={UserPlus} iconTone="violet" />
           </section>
 
@@ -277,10 +340,27 @@ function StagiairesPage() {
                       </td>
                       <td className="px-4 md:px-5 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <ActionBtn icon={Eye} label="Voir" tone="blue" />
-                          <ActionBtn icon={Pencil} label="Modifier" tone="amber" />
-                          <ActionBtn icon={RotateCcw} label="Réinitialiser mot de passe" tone="violet" />
-                          <ActionBtn icon={Trash2} label="Supprimer" tone="danger" />
+                          <button
+                            onClick={() => handleViewStagiaire(s.id)}
+                            className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 transition-colors"
+                            title="Voir"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleEditStagiaire(s.id)}
+                            className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
+                            title="Modifier"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStagiaire(s.id)}
+                            className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -299,7 +379,7 @@ function StagiairesPage() {
             {/* Pagination */}
             <div className="px-4 md:px-5 py-3 border-t border-border flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                Affichage 1–{filtered.length} sur {MOCK.length}
+                Affichage 1–{filtered.length} sur {stagiaires.length}
               </span>
               <div className="flex items-center gap-1">
                 <PageBtn><ChevronLeft className="h-3.5 w-3.5" /></PageBtn>
@@ -313,7 +393,9 @@ function StagiairesPage() {
         </main>
       </div>
 
-      <NewStagiaireDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      <NewStagiaireDialog open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handleCreateStagiaire} />
+      <ViewStagiaireDialog open={viewOpen} onClose={() => setViewOpen(false)} stagiaireId={selectedStagiaireId} />
+      <EditStagiaireDialog open={editOpen} onClose={() => setEditOpen(false)} stagiaireId={selectedStagiaireId} onSubmit={fetchStagiaires} />
     </div>
   );
 }

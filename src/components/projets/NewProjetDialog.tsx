@@ -3,6 +3,7 @@ import {
   X, FolderKanban, FileText, Users, Building2, Calendar, Flag,
   Activity, Check, AlertCircle, Search,
 } from "lucide-react";
+import { getAuthToken, getApiUrl, fetchCurrentUser } from "@/lib/api/auth";
 
 type Statut = "En cours" | "En retard" | "Terminé" | "En pause";
 type Priorite = "Haute" | "Moyenne" | "Basse";
@@ -10,7 +11,7 @@ type Priorite = "Haute" | "Moyenne" | "Basse";
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSubmit?: (data: FormState) => void;
+  onSubmit?: () => void;
 };
 
 export type FormState = {
@@ -33,21 +34,16 @@ const EMPTY: FormState = {
 
 const DEPARTEMENTS = ["Marketing", "IT", "RH", "Ventes", "Comptabilité", "Projets"];
 
-const STAGIAIRES = [
-  { id: "1", nom: "Youssef Bennani", initiale: "YB", couleur: "bg-primary/20 text-primary" },
-  { id: "2", nom: "Oumaima El Idrissi", initiale: "OE", couleur: "bg-success/20 text-success" },
-  { id: "3", nom: "Mehdi Cherkaoui", initiale: "MC", couleur: "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)]" },
-  { id: "4", nom: "Aya Fassi", initiale: "AF", couleur: "bg-success/20 text-success" },
-  { id: "5", nom: "Hamza Naciri", initiale: "HN", couleur: "bg-warning/20 text-warning" },
-  { id: "6", nom: "Lina Amrani", initiale: "LA", couleur: "bg-destructive/20 text-destructive" },
-  { id: "7", nom: "Salma Tahiri", initiale: "ST", couleur: "bg-warning/20 text-warning" },
-  { id: "8", nom: "Rim Belghazi", initiale: "RB", couleur: "bg-primary/20 text-primary" },
-];
+// Les stagiaires sont désormais chargés dynamiquement depuis le backend.
 
 export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [touched, setTouched] = useState(false);
   const [stagSearch, setStagSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [stagiairesList, setStagiairesList] = useState<{ id: string; nom: string; initiale: string; couleur: string }[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,6 +52,29 @@ export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+
+    // Charger les informations de l'utilisateur connecté
+    fetchCurrentUser().then(user => {
+      if (user) setCurrentUser(user);
+    });
+
+    // Charger les stagiaires réels
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    fetch(getApiUrl('/api/stagiaires/list_for_dashboard/'), { headers })
+      .then(res => res.json())
+      .then(data => {
+        setStagiairesList(data.stagiaires || []);
+      })
+      .catch(err => {
+        console.error('Error fetching stagiaires for projets dialog:', err);
+      });
+
     return () => {
       clearTimeout(t);
       document.removeEventListener("keydown", onKey);
@@ -75,21 +94,60 @@ export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
   };
   const isValid = !errors.nom && !errors.description && !errors.dateFin;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched(true);
     if (!isValid) return;
-    onSubmit?.(form);
-    setForm(EMPTY);
-    setTouched(false);
-    setStagSearch("");
-    onClose();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const payload = {
+        nom: form.nom,
+        description: form.description,
+        responsable: currentUser?.id || null,
+        date_debut: form.dateDebut,
+        date_limite: form.dateFin,
+        stagiaires_ids: form.stagiaires.map(id => parseInt(id)),
+        pourcentage_avancement: 0,
+      };
+
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(getApiUrl('/api/projets/'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur lors de la création du projet');
+      }
+
+      onSubmit?.();
+      setForm(EMPTY);
+      setTouched(false);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleClose() {
     setForm(EMPTY);
     setTouched(false);
     setStagSearch("");
+    setError(null);
     onClose();
   }
 
@@ -99,7 +157,7 @@ export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
       : [...form.stagiaires, id]);
   }
 
-  const filteredStag = STAGIAIRES.filter((s) =>
+  const filteredStag = stagiairesList.filter((s) =>
     !stagSearch || s.nom.toLowerCase().includes(stagSearch.toLowerCase()),
   );
 
@@ -274,6 +332,12 @@ export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
                   {form.stagiaires.length} membre{form.stagiaires.length > 1 ? "s" : ""} sélectionné{form.stagiaires.length > 1 ? "s" : ""}
                 </p>
               )}
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm w-full">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
             </Section>
           </div>
 
@@ -292,10 +356,20 @@ export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
               </button>
               <button
                 type="submit"
-                className="h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 transition-colors shadow-sm"
+                disabled={loading}
+                className="h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 transition-colors shadow-sm"
               >
-                <Check className="h-4 w-4" />
-                Créer le projet
+                {loading ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+                    Création...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Créer le projet
+                  </>
+                )}
               </button>
             </div>
           </div>

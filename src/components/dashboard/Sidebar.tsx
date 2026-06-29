@@ -1,4 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import { logout } from "@/lib/api/auth";
 import {
   LayoutDashboard,
   Users,
@@ -25,7 +26,13 @@ const nav = [
 ];
 
 export function Sidebar({ open = true, onClose }: { open?: boolean; onClose?: () => void }) {
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const handleLogout = () => {
+    logout();
+    router.navigate({ to: "/login" });
+  };
 
   return (
     <>
@@ -106,7 +113,10 @@ export function Sidebar({ open = true, onClose }: { open?: boolean; onClose?: ()
             <div className="text-[11px] text-muted-foreground truncate">md@orchidisland.immo</div>
           </div>
         </div>
-        <button className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors py-1.5 rounded-md hover:bg-destructive/10">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors py-1.5 rounded-md hover:bg-destructive/10"
+        >
           <LogOut className="h-3.5 w-3.5" />
           Déconnexion
         </button>

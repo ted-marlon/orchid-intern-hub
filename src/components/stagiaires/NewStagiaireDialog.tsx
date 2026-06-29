@@ -3,6 +3,7 @@ import {
   X, User, Mail, Lock, Phone, GraduationCap, Briefcase, Building2,
   Calendar, BadgeCheck, Eye, EyeOff, Check, AlertCircle,
 } from "lucide-react";
+import { getAuthToken } from "@/lib/api/auth";
 
 type Props = {
   open: boolean;
@@ -15,27 +16,29 @@ type FormState = {
   nom: string;
   email: string;
   password: string;
+  password_confirm: string;
   telephone: string;
   ecole: string;
   formation: string;
   departement: string;
   dateDebut: string;
   dateFin: string;
-  statut: "En attente" | "Accepté" | "Refusé";
 };
 
 const EMPTY: FormState = {
-  prenom: "", nom: "", email: "", password: "",
+  prenom: "", nom: "", email: "", password: "", password_confirm: "",
   telephone: "", ecole: "", formation: "", departement: "",
-  dateDebut: "", dateFin: "", statut: "En attente",
+  dateDebut: "", dateFin: "",
 };
 
-const DEPARTEMENTS = ["Marketing", "IT", "RH", "Ventes", "Comptabilité", "Projets"];
+const DEPARTEMENTS = ["Marketing", "IT", "RH", "Comptabilité"];
 
 export function NewStagiaireDialog({ open, onClose, onSubmit }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [showPwd, setShowPwd] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -61,19 +64,73 @@ export function NewStagiaireDialog({ open, onClose, onSubmit }: Props) {
     nom: !form.nom.trim(),
     email: !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email),
     password: form.password.length < 6,
+    password_confirm: form.password !== form.password_confirm,
   };
   const isValid = !Object.values(errors).some(Boolean);
 
   const pwdScore = scorePassword(form.password);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched(true);
     if (!isValid) return;
-    onSubmit?.(form);
-    setForm(EMPTY);
-    setTouched(false);
-    onClose();
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Mapping du département nom vers ID (à adapter selon votre API)
+      const departementMap: Record<string, number> = {
+        "Marketing": 1,
+        "IT": 3,
+        "RH": 2,
+        "Comptabilité": 4,
+      };
+      
+      const payload = {
+        prenom: form.prenom,
+        nom: form.nom,
+        email: form.email,
+        password: form.password,
+        password_confirm: form.password_confirm,
+        telephone_whatsapp: form.telephone,
+        telephone: form.telephone,
+        ecole: form.ecole,
+        formation: form.formation,
+        departement: departementMap[form.departement] || null,
+        date_debut: form.dateDebut,
+        date_fin: form.dateFin,
+      };
+      
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('http://127.0.0.1:8000/api/stagiaires/create_with_user/', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur lors de la création du stagiaire');
+      }
+      
+      const data = await response.json();
+      onSubmit?.(form);
+      setForm(EMPTY);
+      setTouched(false);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleClose() {
@@ -156,6 +213,15 @@ export function NewStagiaireDialog({ open, onClose, onSubmit }: Props) {
                 </div>
                 {form.password.length > 0 && <PasswordStrength score={pwdScore} />}
               </Field>
+              <Field label="Confirmer le mot de passe" required error={touched && errors.password_confirm ? "Les mots de passe ne correspondent pas" : undefined} icon={Lock}>
+                <Input
+                  type={showPwd ? "text" : "password"}
+                  value={form.password_confirm}
+                  onChange={(v) => set("password_confirm", v)}
+                  placeholder="Confirmer le mot de passe"
+                  hasIcon
+                />
+              </Field>
             </Section>
 
             {/* Contact & école */}
@@ -192,39 +258,17 @@ export function NewStagiaireDialog({ open, onClose, onSubmit }: Props) {
             </Section>
 
             {/* Statut */}
-            <Section title="Statut de candidature" icon={BadgeCheck}>
-              <div className="grid grid-cols-3 gap-2">
-                {(["En attente", "Accepté", "Refusé"] as const).map((s) => {
-                  const active = form.statut === s;
-                  const tone =
-                    s === "Accepté" ? "success" :
-                    s === "Refusé" ? "destructive" : "warning";
-                  const cls = active
-                    ? tone === "success" ? "bg-success/15 text-success ring-success/40"
-                    : tone === "destructive" ? "bg-destructive/15 text-destructive ring-destructive/40"
-                    : "bg-warning/15 text-warning ring-warning/40"
-                    : "bg-background text-muted-foreground ring-border hover:text-foreground hover:bg-muted/40";
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => set("statut", s)}
-                      className={`h-9 rounded-md text-xs font-medium ring-1 ring-inset transition-colors ${cls}`}
-                    >
-                      {active && <Check className="inline h-3 w-3 mr-1 -mt-px" />}
-                      {s}
-                    </button>
-                  );
-                })}
+            
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {error}
               </div>
-            </Section>
+            )}
           </div>
 
           {/* Footer */}
           <div className="px-5 md:px-6 py-3.5 border-t border-border bg-card/60 backdrop-blur sticky bottom-0 flex items-center justify-between gap-3">
-            <p className="text-[11px] text-muted-foreground hidden sm:block">
-              Un email d'invitation sera envoyé au stagiaire.
-            </p>
             <div className="flex items-center gap-2 ml-auto">
               <button
                 type="button"
@@ -235,10 +279,20 @@ export function NewStagiaireDialog({ open, onClose, onSubmit }: Props) {
               </button>
               <button
                 type="submit"
+                disabled={loading}
                 className="h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 transition-colors"
               >
-                <Check className="h-4 w-4" />
-                Enregistrer
+                {loading ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                    Création...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Enregistrer
+                  </>
+                )}
               </button>
             </div>
           </div>

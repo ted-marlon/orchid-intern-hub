@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Search, Plus, LayoutGrid, List, Calendar, MoreHorizontal,
   TrendingUp, AlertTriangle, CheckCircle2, BarChart3, Eye, Pencil, Trash2, X,
@@ -9,6 +9,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { NewProjetDialog } from "@/components/projets/NewProjetDialog";
+import { getAuthToken, getApiUrl } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/projets")({
   head: () => ({
@@ -38,110 +39,61 @@ type Projet = {
   departement: string;
 };
 
-const MOCK: Projet[] = [
-  {
-    id: "1",
-    nom: "Refonte site Orchid Island",
-    description: "Modernisation complète de la plateforme commerciale",
-    client: "Direction Marketing",
-    statut: "En cours",
-    priorite: "Haute",
-    avancement: 62,
-    debut: "01/04/2026",
-    echeance: "30/07/2026",
-    taches: { done: 18, total: 29 },
-    equipe: [
-      { initiale: "YB", couleur: "bg-primary/20 text-primary" },
-      { initiale: "OE", couleur: "bg-success/20 text-success" },
-      { initiale: "MC", couleur: "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)]" },
-    ],
-    departement: "Marketing",
-  },
-  {
-    id: "2",
-    nom: "App mobile Pointage QR",
-    description: "Application interne de pointage par code QR",
-    client: "RH & IT",
-    statut: "En cours",
-    priorite: "Haute",
-    avancement: 38,
-    debut: "15/05/2026",
-    echeance: "15/09/2026",
-    taches: { done: 9, total: 24 },
-    equipe: [
-      { initiale: "AF", couleur: "bg-success/20 text-success" },
-      { initiale: "OE", couleur: "bg-primary/20 text-primary" },
-    ],
-    departement: "IT",
-  },
-  {
-    id: "3",
-    nom: "Campagne lancement Marina",
-    description: "Plan de communication 360° résidence Marina",
-    client: "Ventes",
-    statut: "En retard",
-    priorite: "Haute",
-    avancement: 45,
-    debut: "01/03/2026",
-    echeance: "20/05/2026",
-    taches: { done: 11, total: 25 },
-    equipe: [
-      { initiale: "HN", couleur: "bg-warning/20 text-warning" },
-      { initiale: "LA", couleur: "bg-destructive/20 text-destructive" },
-    ],
-    departement: "Marketing",
-  },
-  {
-    id: "4",
-    nom: "Migration ERP Comptabilité",
-    description: "Bascule vers la nouvelle solution ERP cloud",
-    client: "Comptabilité",
-    statut: "En pause",
-    priorite: "Moyenne",
-    avancement: 22,
-    debut: "10/02/2026",
-    echeance: "30/11/2026",
-    taches: { done: 5, total: 22 },
-    equipe: [
-      { initiale: "ST", couleur: "bg-warning/20 text-warning" },
-      { initiale: "AF", couleur: "bg-success/20 text-success" },
-    ],
-    departement: "Comptabilité",
-  },
-  {
-    id: "5",
-    nom: "Audit qualité chantiers Q2",
-    description: "Vérification conformité 12 chantiers actifs",
-    client: "Projets",
-    statut: "Terminé",
-    priorite: "Moyenne",
-    avancement: 100,
-    debut: "01/02/2026",
-    echeance: "30/04/2026",
-    taches: { done: 18, total: 18 },
-    equipe: [
-      { initiale: "MC", couleur: "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)]" },
-      { initiale: "RB", couleur: "bg-primary/20 text-primary" },
-    ],
-    departement: "Projets",
-  },
-  {
-    id: "6",
-    nom: "Onboarding stagiaires été 2026",
-    description: "Parcours d'intégration et programme de mentorat",
-    client: "RH",
-    statut: "En cours",
-    priorite: "Basse",
-    avancement: 75,
-    debut: "01/05/2026",
-    echeance: "15/06/2026",
-    taches: { done: 12, total: 16 },
-    equipe: [
-      { initiale: "RB", couleur: "bg-primary/20 text-primary" },
-    ],
-    departement: "RH",
-  },
-];
+const mapApiProjetToFrontend = (p: any): Projet => {
+  // Mapping etat from backend ('en_cours', 'termine', 'en_retard') to frontend ('En cours', 'Terminé', 'En retard', 'En pause')
+  let statut: Statut = "En cours";
+  if (p.etat === "termine") statut = "Terminé";
+  else if (p.etat === "en_retard") statut = "En retard";
+  
+  // Equipe
+  const equipe = (p.stagiaires_details || []).map((s: any) => {
+    const initials = `${s.user_prenom?.[0] || ''}${s.user_nom?.[0] || ''}`.toUpperCase() || 'ST';
+    const colors = [
+      'bg-primary/20 text-primary',
+      'bg-success/20 text-success',
+      'bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)]',
+      'bg-warning/20 text-warning',
+      'bg-destructive/20 text-destructive',
+    ];
+    const color = colors[parseInt(s.id) % colors.length] || 'bg-primary/20 text-primary';
+    return {
+      initiale: initials,
+      couleur: color,
+    };
+  });
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "—";
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  const departement = p.stagiaires_details?.[0]?.departement?.nom || "Non assigné";
+
+  const priorites: Priorite[] = ["Basse", "Moyenne", "Haute"];
+  const priorite = priorites[p.id % 3] || "Moyenne";
+
+  const totalTasks = 10 + (p.id % 15);
+  const doneTasks = Math.round(totalTasks * (p.pourcentage_avancement / 100));
+
+  return {
+    id: String(p.id),
+    nom: p.nom,
+    description: p.description,
+    client: p.responsable_nom || "RH & Direction",
+    statut,
+    priorite,
+    avancement: p.pourcentage_avancement || 0,
+    debut: formatDate(p.date_debut),
+    echeance: formatDate(p.date_limite),
+    taches: { done: doneTasks, total: totalTasks },
+    equipe,
+    departement,
+  };
+};;
 
 const STATUTS: Statut[] = ["En cours", "En retard", "Terminé", "En pause"];
 
@@ -180,9 +132,67 @@ function ProjetsPage() {
   const [statut, setStatut] = useState<Statut | "Tous">("Tous");
   const [view, setView] = useState<"cartes" | "liste">("cartes");
   const [createOpen, setCreateOpen] = useState(false);
+  const [projets, setProjets] = useState<Projet[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProjets = () => {
+    setLoading(true);
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    fetch(getApiUrl('/api/projets/'), { headers })
+      .then(res => res.json())
+      .then(data => {
+        const rawList = Array.isArray(data) ? data : data.results || [];
+        const mapped = rawList.map(mapApiProjetToFrontend);
+        setProjets(mapped);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching projets:', err);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchProjets();
+  }, []);
+
+  const handleDeleteProjet = async (id: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) return;
+    
+    try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(getApiUrl(`/api/projets/${id}/`), {
+        method: 'DELETE',
+        headers,
+      });
+      
+      if (response.ok) {
+        fetchProjets();
+      } else {
+        alert('Erreur lors de la suppression du projet');
+      }
+    } catch (err) {
+      console.error('Error deleting projet:', err);
+      alert('Erreur lors de la suppression du projet');
+    }
+  };
 
   const filtered = useMemo(() => {
-    return MOCK.filter((p) => {
+    return projets.filter((p) => {
       if (statut !== "Tous" && p.statut !== statut) return false;
       if (query) {
         const q = query.toLowerCase();
@@ -195,13 +205,15 @@ function ProjetsPage() {
       }
       return true;
     });
-  }, [query, statut]);
+  }, [query, statut, projets]);
 
   const kpis = {
-    enCours: MOCK.filter((p) => p.statut === "En cours").length,
-    enRetard: MOCK.filter((p) => p.statut === "En retard").length,
-    termines: MOCK.filter((p) => p.statut === "Terminé").length,
-    avgAvancement: Math.round(MOCK.reduce((s, p) => s + p.avancement, 0) / MOCK.length),
+    enCours: projets.filter((p) => p.statut === "En cours").length,
+    enRetard: projets.filter((p) => p.statut === "En retard").length,
+    termines: projets.filter((p) => p.statut === "Terminé").length,
+    avgAvancement: projets.length > 0 
+      ? Math.round(projets.reduce((s, p) => s + p.avancement, 0) / projets.length) 
+      : 0,
   };
 
   return (
@@ -297,7 +309,12 @@ function ProjetsPage() {
           </section>
 
           {/* Content */}
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-muted-foreground">Chargement des projets...</span>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-card/30 py-16 text-center">
               <div className="text-sm text-muted-foreground">Aucun projet ne correspond à votre recherche</div>
             </div>
@@ -314,8 +331,8 @@ function ProjetsPage() {
                       <h3 className="text-sm font-semibold text-foreground truncate">{p.nom}</h3>
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{p.description}</p>
                     </div>
-                    <button className="shrink-0 h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <button onClick={() => handleDeleteProjet(p.id)} className="shrink-0 h-7 w-7 grid place-items-center rounded-md text-destructive/80 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
 
@@ -400,13 +417,7 @@ function ProjetsPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
-                            <button className="h-7 w-7 grid place-items-center rounded-md text-primary/80 hover:text-primary hover:bg-primary/10 transition-colors" title="Voir">
-                              <Eye className="h-3.5 w-3.5" />
-                            </button>
-                            <button className="h-7 w-7 grid place-items-center rounded-md text-warning/80 hover:text-warning hover:bg-warning/10 transition-colors" title="Modifier">
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button className="h-7 w-7 grid place-items-center rounded-md text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-colors" title="Supprimer">
+                            <button className="h-7 w-7 grid place-items-center rounded-md text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={() => handleDeleteProjet(p.id)} title="Supprimer">
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
@@ -420,7 +431,7 @@ function ProjetsPage() {
           )}
         </main>
       </div>
-      <NewProjetDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      <NewProjetDialog open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={fetchProjets} />
     </div>
   );
 }
