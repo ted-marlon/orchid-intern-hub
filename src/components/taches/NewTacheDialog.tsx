@@ -15,7 +15,7 @@ type Props = {
   onClose: () => void;
   projets: Projet[];
   stagiaires: Stagiaire[];
-  onSubmit?: (data: FormState) => void;
+  onSubmit?: (data: FormState) => Promise<void> | void;
 };
 
 export type FormState = {
@@ -42,6 +42,8 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
   const [touched, setTouched] = useState(false);
   const [stagSearch, setStagSearch] = useState("");
   const [tagInput, setTagInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -69,13 +71,23 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
   };
   const isValid = !errors.titre && !errors.projet && !errors.description;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched(true);
     if (!isValid) return;
-    onSubmit?.(form);
-    reset();
-    onClose();
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await onSubmit?.(form);
+      reset();
+      onClose();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Erreur lors de la création de la tâche.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function reset() {
@@ -85,7 +97,11 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
     setTagInput("");
   }
 
-  function handleClose() { reset(); onClose(); }
+  function handleClose() {
+    if (submitting) return;
+    reset();
+    onClose();
+  }
 
   function toggleStag(id: string) {
     set("assignes", form.assignes.includes(id)
@@ -171,7 +187,7 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
             </Section>
 
             {/* Priorité & Statut */}
-            <Section title="Priorité & statut" icon={Flag}>
+            <Section title="Priorité" icon={Flag}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="block text-[11px] font-medium text-foreground/80 mb-1.5">Priorité</span>
@@ -193,24 +209,6 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
                   </div>
                 </div>
                 <div>
-                  <span className="block text-[11px] font-medium text-foreground/80 mb-1.5">Statut initial</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["À faire", "En cours", "En revue"] as Statut[]).map((s) => {
-                      const active = form.statut === s;
-                      const cls = active
-                        ? s === "En cours" ? "bg-primary/15 text-primary ring-primary/40"
-                        : s === "En revue" ? "bg-warning/15 text-warning ring-warning/40"
-                        : "bg-muted/60 text-foreground ring-border"
-                        : "bg-background text-muted-foreground ring-border hover:text-foreground hover:bg-muted/40";
-                      return (
-                        <button key={s} type="button" onClick={() => set("statut", s)}
-                          className={`h-9 rounded-md text-xs font-medium ring-1 ring-inset transition-colors ${cls}`}>
-                          {active && <Check className="inline h-3 w-3 mr-1 -mt-px" />}
-                          {s}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             </Section>
@@ -220,9 +218,6 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Échéance" icon={Calendar}>
                   <Input type="date" value={form.echeance} onChange={(v) => set("echeance", v)} hasIcon />
-                </Field>
-                <Field label="Estimation (heures)" icon={Clock}>
-                  <Input type="number" value={form.estimation} onChange={(v) => set("estimation", v)} placeholder="Ex : 8" hasIcon />
                 </Field>
               </div>
               {days !== null && (
@@ -238,37 +233,6 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
                 </div>
               )}
             </Section>
-
-            {/* Tags */}
-            <Section title="Étiquettes" icon={Tag}>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {form.tags.map((t) => (
-                  <span key={t} className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-md bg-muted/60 text-foreground text-[11px] ring-1 ring-inset ring-border">
-                    #{t}
-                    <button type="button" onClick={() => removeTag(t)} className="h-4 w-4 grid place-items-center rounded hover:bg-background text-muted-foreground hover:text-foreground">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-                <div className="relative flex-1 min-w-[160px]">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                  <input
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(tagInput); }
-                      else if (e.key === "Backspace" && !tagInput && form.tags.length) {
-                        removeTag(form.tags[form.tags.length - 1]);
-                      }
-                    }}
-                    onBlur={() => tagInput && addTag(tagInput)}
-                    placeholder="Ajouter un tag puis Entrée…"
-                    className="w-full h-9 pl-9 pr-3 rounded-md bg-background border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
-              </div>
-            </Section>
-
             {/* Assignés */}
             <Section title="Stagiaires assignés" icon={Users}>
               <div className="relative">
@@ -320,26 +284,31 @@ export function NewTacheDialog({ open, onClose, projets, stagiaires, onSubmit }:
               <button
                 type="button"
                 onClick={handleClose}
-                className="h-9 px-4 rounded-md text-sm text-foreground bg-background border border-border hover:bg-muted/60 transition-colors"
+                disabled={submitting}
+                className="h-9 px-4 rounded-md text-sm text-foreground bg-background border border-border hover:bg-muted/60 transition-colors disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 type="submit"
-                className="h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 transition-colors shadow-sm"
+                disabled={submitting}
+                className="h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-70"
               >
                 <Check className="h-4 w-4" />
-                Créer la tâche
+                {submitting ? "Création…" : "Créer la tâche"}
               </button>
             </div>
           </div>
+          {submitError && (
+            <div className="px-5 md:px-6 pb-3 text-[11px] text-destructive">
+              {submitError}
+            </div>
+          )}
         </form>
       </div>
     </div>
   );
 }
-
-/* ---------- helpers ---------- */
 
 function Section({
   title, icon: Icon, children,

@@ -326,7 +326,6 @@ function ProjetsPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={statutBadge(p.statut)}>{p.statut}</span>
-                        <span className={prioriteBadge(p.priorite)}>{p.priorite}</span>
                       </div>
                       <h3 className="text-sm font-semibold text-foreground truncate">{p.nom}</h3>
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{p.description}</p>
@@ -354,8 +353,6 @@ function ProjetsPage() {
                       <span className="tabular-nums">{p.echeance}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-muted-foreground justify-end">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span className="tabular-nums">{p.taches.done}/{p.taches.total} tâches</span>
                     </div>
                   </div>
 
@@ -368,7 +365,7 @@ function ProjetsPage() {
                         </div>
                       ))}
                     </div>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.departement}</span>
+
                   </div>
                 </article>
               ))}

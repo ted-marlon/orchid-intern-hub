@@ -32,7 +32,7 @@ const EMPTY: FormState = {
   dateDebut: "", dateFin: "", stagiaires: [],
 };
 
-const DEPARTEMENTS = ["Marketing", "IT", "RH", "Ventes", "Comptabilité", "Projets"];
+const DEPARTEMENTS = ["Marketing", "IT", "RH", "Comptabilité"];
 
 // Les stagiaires sont désormais chargés dynamiquement depuis le backend.
 
@@ -217,63 +217,7 @@ export function NewProjetDialog({ open, onClose, onSubmit }: Props) {
                   className="w-full px-3 py-2 rounded-md bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-colors resize-none"
                 />
               </Field>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Client / Demandeur" icon={Building2}>
-                  <Input value={form.client} onChange={(v) => set("client", v)} placeholder="Direction Marketing" hasIcon />
-                </Field>
-                <Field label="Département" icon={Building2}>
-                  <Select value={form.departement} onChange={(v) => set("departement", v)} hasIcon>
-                    <option value="">Sélectionner…</option>
-                    {DEPARTEMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-                  </Select>
-                </Field>
-              </div>
             </Section>
-
-            {/* Priorité & Statut */}
-            <Section title="Priorité & statut" icon={Flag}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <span className="block text-[11px] font-medium text-foreground/80 mb-1.5">Priorité</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["Basse", "Moyenne", "Haute"] as const).map((p) => {
-                      const active = form.priorite === p;
-                      const cls = active
-                        ? p === "Haute" ? "bg-destructive/15 text-destructive ring-destructive/40"
-                        : p === "Moyenne" ? "bg-warning/15 text-warning ring-warning/40"
-                        : "bg-muted/60 text-foreground ring-border"
-                        : "bg-background text-muted-foreground ring-border hover:text-foreground hover:bg-muted/40";
-                      return (
-                        <button key={p} type="button" onClick={() => set("priorite", p)}
-                          className={`h-9 rounded-md text-xs font-medium ring-1 ring-inset transition-colors ${cls}`}>
-                          {p}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <span className="block text-[11px] font-medium text-foreground/80 mb-1.5">Statut initial</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["En cours", "En pause"] as Statut[]).map((s) => {
-                      const active = form.statut === s;
-                      const cls = active
-                        ? s === "En cours" ? "bg-primary/15 text-primary ring-primary/40"
-                        : "bg-muted/60 text-foreground ring-border"
-                        : "bg-background text-muted-foreground ring-border hover:text-foreground hover:bg-muted/40";
-                      return (
-                        <button key={s} type="button" onClick={() => set("statut", s)}
-                          className={`h-9 rounded-md text-xs font-medium ring-1 ring-inset transition-colors ${cls}`}>
-                          {active && <Check className="inline h-3 w-3 mr-1 -mt-px" />}
-                          {s}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </Section>
-
             {/* Période */}
             <Section title="Calendrier" icon={Calendar}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

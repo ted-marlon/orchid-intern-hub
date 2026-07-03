@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search, Plus, LayoutGrid, List as ListIcon, Calendar, Filter,
   CheckCircle2, Circle, Clock, AlertTriangle, Flag, FolderKanban,
@@ -9,7 +9,8 @@ import {
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
-import { NewTacheDialog } from "@/components/taches/NewTacheDialog";
+import { NewTacheDialog, type FormState } from "@/components/taches/NewTacheDialog";
+import { getAuthToken, getApiUrl } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/taches")({
   head: () => ({
@@ -27,11 +28,13 @@ type Statut = "À faire" | "En cours" | "En revue" | "Terminée";
 type Priorite = "Haute" | "Moyenne" | "Basse";
 
 type Stagiaire = { id: string; nom: string; initiale: string; couleur: string };
+type Projet = { id: string; nom: string; couleur: string };
+
 type Tache = {
   id: string;
   titre: string;
   description: string;
-  projet: { id: string; nom: string; couleur: string };
+  projet: Projet;
   statut: Statut;
   priorite: Priorite;
   echeance: string; // ISO yyyy-mm-dd
@@ -194,6 +197,101 @@ function getStagiaires(ids: string[]) {
   return ids.map((id) => STAGIAIRES.find((s) => s.id === id)!).filter(Boolean);
 }
 
+function mapApiStagiaireToFrontend(stagiaire: any, index: number): Stagiaire {
+  const fullname = stagiaire.nom || `${stagiaire.user_prenom || ''} ${stagiaire.user_nom || ''}`.trim();
+  const initials = fullname
+    .split(" ")
+    .filter(Boolean)
+    .map((part: string) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || `S${index}`;
+  const colors = [
+    "bg-primary/20 text-primary ring-primary/30",
+    "bg-success/20 text-success ring-success/30",
+    "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)] ring-[oklch(0.68_0.18_295/0.35)]",
+    "bg-warning/20 text-warning ring-warning/30",
+    "bg-destructive/20 text-destructive ring-destructive/30",
+  ];
+  return {
+    id: String(stagiaire.id),
+    nom: fullname || `Stagiaire ${stagiaire.id}`,
+    initiale: initials,
+    couleur: colors[index % colors.length],
+  };
+}
+
+function mapApiTaskToFrontend(task: any): Tache {
+  const statut =
+    task.statut === "terminee"
+      ? "Terminée"
+      : task.statut === "en_cours"
+        ? "En cours"
+        : task.statut === "a_faire"
+          ? "À faire"
+          : (task.statut_affichage as Statut) || "À faire";
+
+  const priorite =
+    task.priorite === "haute"
+      ? "Haute"
+      : task.priorite === "faible"
+        ? "Basse"
+        : (task.priorite_affichage as Priorite) || "Moyenne";
+
+  const projectId = task.projet ? String(task.projet) : "0";
+  const projectName = task.projet_nom || "Projet";
+  const colors = [
+    "bg-primary/15 text-primary ring-primary/25",
+    "bg-[oklch(0.68_0.18_295/0.15)] text-[oklch(0.78_0.16_295)] ring-[oklch(0.68_0.18_295/0.3)]",
+    "bg-warning/15 text-warning ring-warning/25",
+    "bg-success/15 text-success ring-success/25",
+  ];
+
+  return {
+    id: String(task.id),
+    titre: task.nom || task.titre || "Sans titre",
+    description: task.description || "",
+    projet: {
+      id: projectId,
+      nom: projectName,
+      couleur: colors[Number(projectId) % colors.length] || colors[0],
+    },
+    statut: statut as Statut,
+    priorite: priorite as Priorite,
+    echeance: task.date_limite || "",
+    assignes: task.assignee_a ? [String(task.assignee_a)] : [],
+    commentaires: 0,
+    pj: 0,
+    tags: [],
+  };
+}
+
+function mapStatutToBackend(statut: Statut): string {
+  switch (statut) {
+    case "Terminée":
+      return "terminee";
+    case "En cours":
+      return "en_cours";
+    case "En revue":
+      return "en_cours";
+    case "À faire":
+    default:
+      return "a_faire";
+  }
+}
+
+function mapPrioriteToBackend(priorite: Priorite): string {
+  switch (priorite) {
+    case "Haute":
+      return "haute";
+    case "Basse":
+      return "faible";
+    case "Moyenne":
+    default:
+      return "moyenne";
+  }
+}
+
 /* ------------------------ Page ------------------------ */
 
 function TachesPage() {
@@ -206,9 +304,159 @@ function TachesPage() {
   const [projet, setProjet] = useState<string>("tous");
   const [view, setView] = useState<"kanban" | "liste">("kanban");
   const [createOpen, setCreateOpen] = useState(false);
+  const [tasks, setTasks] = useState<Tache[]>([]);
+  const [allProjects, setAllProjects] = useState<Projet[]>(PROJETS);
+  const [stagiaires, setStagiaires] = useState<Stagiaire[]>(STAGIAIRES);
+  const [loading, setLoading] = useState(true);
+  const [loadingStagiaires, setLoadingStagiaires] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(getApiUrl("/api/taches/"), { headers });
+      if (!response.ok) {
+        throw new Error("Impossible de charger les tâches");
+      }
+
+      const data = await response.json();
+      const rawList = Array.isArray(data) ? data : data.results || [];
+      const mapped = rawList.map(mapApiTaskToFrontend);
+      setTasks(mapped);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+      setTasks(MOCK);
+      setError("Connexion API indisponible, affichage des données de démonstration.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchTasks();
+    void fetchProjects();
+    void fetchStagiaires();
+  }, []);
+
+  const fetchStagiaires = async () => {
+    setLoadingStagiaires(true);
+
+    try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(getApiUrl("/api/stagiaires/list_for_dashboard/"), { headers });
+      if (!response.ok) {
+        throw new Error("Impossible de charger les stagiaires");
+      }
+
+      const data = await response.json();
+      const rawList: any[] = data.stagiaires || data || [];
+      const mapped = rawList.map(mapApiStagiaireToFrontend);
+      setStagiaires(mapped);
+    } catch (err) {
+      console.error("Error fetching stagiaires:", err);
+      setStagiaires(STAGIAIRES);
+    } finally {
+      setLoadingStagiaires(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(getApiUrl("/api/projets/"), { headers });
+      if (!response.ok) {
+        throw new Error("Impossible de charger les projets");
+      }
+
+      const data = await response.json();
+      const rawList = Array.isArray(data) ? data : data.results || [];
+      const projects = rawList.map((p: any) => ({
+        id: String(p.id),
+        nom: p.nom || p.titre || `Projet ${p.id}`,
+        couleur: "bg-primary/15 text-primary ring-primary/25",
+      }));
+      setAllProjects(projects);
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+      setAllProjects(PROJETS);
+    }
+  };
+
+  const handleCreateTask = async (data: FormState) => {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const parsedProjectId = Number(data.projetId);
+    const parsedAssigneeId = Number(data.assignes[0]);
+
+    const payload = {
+      nom: data.titre,
+      description: data.description,
+      projet: Number.isFinite(parsedProjectId) && parsedProjectId > 0 ? parsedProjectId : null,
+      assignee_a: Number.isFinite(parsedAssigneeId) && parsedAssigneeId > 0 ? parsedAssigneeId : null,
+      priorite: mapPrioriteToBackend(data.priorite),
+      date_limite: data.echeance || new Date().toISOString().slice(0, 10),
+      statut: mapStatutToBackend(data.statut),
+      realisee: data.statut === "Terminée",
+    };
+
+    const response = await fetch(getApiUrl("/api/taches/"), {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => null);
+      const detail = errData?.detail || errData?.error || "Erreur lors de la création de la tâche.";
+      throw new Error(typeof detail === "string" ? detail : "Erreur lors de la création de la tâche.");
+    }
+
+    await fetchTasks();
+  };
+
+  const projectOptions = useMemo(() => {
+    return [
+      { value: "tous", label: "Tous les projets" },
+      ...allProjects.map((project) => ({ value: project.id, label: project.nom })),
+    ];
+  }, [allProjects]);
+
+  const dialogProjects = useMemo(() => {
+    return allProjects;
+  }, [allProjects]);
 
   const filtered = useMemo(() => {
-    return MOCK.filter((t) => {
+    return tasks.filter((t) => {
       if (statut !== "Tous" && t.statut !== statut) return false;
       if (priorite !== "Toutes" && t.priorite !== priorite) return false;
       if (projet !== "tous" && t.projet.id !== projet) return false;
@@ -223,13 +471,13 @@ function TachesPage() {
       }
       return true;
     });
-  }, [query, statut, priorite, projet]);
+  }, [query, statut, priorite, projet, tasks]);
 
   const kpis = {
-    total: MOCK.length,
-    enCours: MOCK.filter((t) => t.statut === "En cours").length,
-    enRetard: MOCK.filter((t) => t.statut !== "Terminée" && daysUntil(t.echeance) < 0).length,
-    terminees: MOCK.filter((t) => t.statut === "Terminée").length,
+    total: tasks.length,
+    enCours: tasks.filter((t) => t.statut === "En cours").length,
+    enRetard: tasks.filter((t) => t.statut !== "Terminée" && daysUntil(t.echeance) < 0).length,
+    terminees: tasks.filter((t) => t.statut === "Terminée").length,
   };
 
   const grouped: Record<Statut, Tache[]> = {
@@ -283,6 +531,11 @@ function TachesPage() {
 
           {/* Filters */}
           <div className="rounded-xl border border-border bg-card p-3 md:p-4 space-y-3">
+            {error && (
+              <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[11px] text-warning">
+                {error}
+              </div>
+            )}
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -303,7 +556,7 @@ function TachesPage() {
                   icon={FolderKanban}
                   value={projet}
                   onChange={setProjet}
-                  options={[{ value: "tous", label: "Tous les projets" }, ...PROJETS.map((p) => ({ value: p.id, label: p.nom }))]}
+                  options={projectOptions}
                 />
                 <SelectFilter
                   icon={Flag}
@@ -342,7 +595,11 @@ function TachesPage() {
           </div>
 
           {/* Content */}
-          {filtered.length === 0 ? (
+          {loading && tasks.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">
+              Chargement des tâches…
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-card/40 p-10 text-center">
               <p className="text-sm text-foreground">Aucune tâche ne correspond aux filtres.</p>
               <p className="text-xs text-muted-foreground mt-1">Ajustez la recherche ou réinitialisez les filtres.</p>
@@ -362,8 +619,9 @@ function TachesPage() {
       <NewTacheDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        projets={PROJETS}
-        stagiaires={STAGIAIRES}
+        projets={dialogProjects}
+        stagiaires={stagiaires}
+        onSubmit={handleCreateTask}
       />
     </div>
   );
