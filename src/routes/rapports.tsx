@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   FileText, FileCheck2, UserCheck, Search, Filter,
   CheckCircle2, Clock, AlertCircle, FileWarning, Mail,
@@ -10,6 +10,7 @@ import {
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { getAuthToken, getApiUrl } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/rapports")({
   head: () => ({
@@ -21,16 +22,40 @@ export const Route = createFileRoute("/rapports")({
   component: RapportsPage,
 });
 
-/* ------------------------ Types & mock data ------------------------ */
+/* ------------------------ Types API ------------------------ */
+
+type RapportJournalierAPI = {
+  id: number;
+  date_rapport: string;
+  stagiaire: number;
+  nom_stagiaire: string;
+  taches_realisees: string;
+  taches_en_cours: string;
+  commentaire: string;
+  depose: boolean;
+  created_at: string;
+};
+
+type RapportFinalAPI = {
+  id: number;
+  stagiaire: number;
+  nom_stagiaire: string;
+  fichier_path: string | null;
+  date_depot: string | null;
+  statut_validation: 'valide' | 'en_attente' | 'refuse';
+  commentaire_rh: string | null;
+  nom_valide_par: string | null;
+};
+
+/* ------------------------ Types Frontend ------------------------ */
 
 type StatutDepot = "Déposé" | "Manquant" | "En retard" | "Validé" | "En attente";
 type Tab = "journaliers" | "finaux" | "suivi";
 
-type Stagiaire = { id: string; nom: string; initiale: string; couleur: string; projet: string };
-
 type RapportJournalier = {
   id: string;
   stagiaireId: string;
+  nomStagiaire: string;
   date: string;
   statut: StatutDepot;
   fichier?: string;
@@ -41,71 +66,73 @@ type RapportJournalier = {
 type RapportFinal = {
   id: string;
   stagiaireId: string;
+  nomStagiaire: string;
   titre: string;
   date: string;
   statut: "Validé" | "En attente" | "À déposer";
   fichier?: string;
-  taille?: string;
-  pages?: number;
 };
-
-const STAGIAIRES: Stagiaire[] = [
-  { id: "yb", nom: "Youssef Bennani",   initiale: "YB", couleur: "bg-primary/20 text-primary ring-primary/30", projet: "Refonte site Orchid Island" },
-  { id: "oe", nom: "Oumaima El Idrissi",initiale: "OE", couleur: "bg-success/20 text-success ring-success/30", projet: "App mobile Pointage QR" },
-  { id: "mc", nom: "Mehdi Cherkaoui",   initiale: "MC", couleur: "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)] ring-[oklch(0.68_0.18_295/0.35)]", projet: "Refonte site Orchid Island" },
-  { id: "af", nom: "Aya Fassi",         initiale: "AF", couleur: "bg-success/20 text-success ring-success/30", projet: "App mobile Pointage QR" },
-  { id: "hn", nom: "Hamza Naciri",      initiale: "HN", couleur: "bg-warning/20 text-warning ring-warning/30", projet: "Campagne lancement Marina" },
-  { id: "la", nom: "Lina Amrani",       initiale: "LA", couleur: "bg-destructive/20 text-destructive ring-destructive/30", projet: "Campagne lancement Marina" },
-  { id: "rb", nom: "Rim Belghazi",      initiale: "RB", couleur: "bg-primary/20 text-primary ring-primary/30", projet: "Onboarding stagiaires été 2026" },
-];
-
-const TODAY = "2026-06-08";
-
-const JOURNALIERS: RapportJournalier[] = [
-  { id: "j1", stagiaireId: "yb", date: TODAY, statut: "Déposé",   fichier: "rapport-yb-08-06.pdf", heure: "17:42", projet: "Refonte site Orchid Island" },
-  { id: "j2", stagiaireId: "oe", date: TODAY, statut: "Déposé",   fichier: "rapport-oe-08-06.pdf", heure: "16:58", projet: "App mobile Pointage QR" },
-  { id: "j3", stagiaireId: "mc", date: TODAY, statut: "En retard",fichier: "rapport-mc-08-06.pdf", heure: "19:12", projet: "Refonte site Orchid Island" },
-  { id: "j4", stagiaireId: "af", date: TODAY, statut: "Déposé",   fichier: "rapport-af-08-06.pdf", heure: "17:05", projet: "App mobile Pointage QR" },
-  { id: "j5", stagiaireId: "hn", date: TODAY, statut: "Manquant", projet: "Campagne lancement Marina" },
-  { id: "j6", stagiaireId: "la", date: TODAY, statut: "Manquant", projet: "Campagne lancement Marina" },
-  { id: "j7", stagiaireId: "rb", date: TODAY, statut: "Déposé",   fichier: "rapport-rb-08-06.pdf", heure: "17:30", projet: "Onboarding stagiaires été 2026" },
-];
-
-const FINAUX: RapportFinal[] = [
-  { id: "f1", stagiaireId: "yb", titre: "Refonte UX — Bilan de stage", date: "2026-06-04", statut: "Validé",     fichier: "memoire-yb-final.pdf", taille: "4.2 Mo", pages: 62 },
-  { id: "f2", stagiaireId: "oe", titre: "Application Pointage QR",     date: "2026-06-06", statut: "En attente", fichier: "memoire-oe-final.pdf", taille: "5.8 Mo", pages: 78 },
-  { id: "f3", stagiaireId: "mc", titre: "Audit SEO & Performance",     date: "2026-06-07", statut: "En attente", fichier: "memoire-mc-final.pdf", taille: "3.1 Mo", pages: 48 },
-  { id: "f4", stagiaireId: "af", titre: "Tests E2E & Qualité",         date: "—",          statut: "À déposer" },
-  { id: "f5", stagiaireId: "hn", titre: "Brand book Marina",           date: "—",          statut: "À déposer" },
-];
 
 /* ------------------------ Helpers ------------------------ */
 
-function getStagiaire(id: string) {
-  return STAGIAIRES.find((s) => s.id === id)!;
-}
+const TODAY = new Date().toISOString().split('T')[0];
 
-function statutMeta(s: StatutDepot | RapportFinal["statut"]) {
-  switch (s) {
-    case "Déposé":
-    case "Validé":
-      return { chip: "bg-success/15 text-success ring-success/30", dot: "bg-success", icon: CheckCircle2 };
-    case "En retard":
-      return { chip: "bg-warning/15 text-warning ring-warning/30", dot: "bg-warning", icon: Clock };
-    case "Manquant":
-    case "À déposer":
-      return { chip: "bg-destructive/15 text-destructive ring-destructive/30", dot: "bg-destructive", icon: AlertCircle };
-    case "En attente":
-      return { chip: "bg-primary/15 text-primary ring-primary/30", dot: "bg-primary", icon: Clock };
-    default:
-      return { chip: "bg-muted/60 text-muted-foreground ring-border", dot: "bg-muted-foreground/60", icon: AlertCircle };
-  }
-}
-
-function formatDateFr(iso: string) {
-  if (iso === "—") return "—";
+function formatDateFr(iso: string | null) {
+  if (!iso || iso === "—") return "—";
   const d = new Date(iso);
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function getStagiaireUI(nom: string, id: number) {
+  const noms = nom.split(' ');
+  const initiale = (noms[0]?.[0] || '') + (noms[1]?.[0] || '');
+  const couleurs = [
+    "bg-primary/20 text-primary ring-primary/30",
+    "bg-success/20 text-success ring-success/30",
+    "bg-[oklch(0.68_0.18_295/0.2)] text-[oklch(0.78_0.16_295)] ring-[oklch(0.68_0.18_295/0.35)]",
+    "bg-warning/20 text-warning ring-warning/30",
+    "bg-destructive/20 text-destructive ring-destructive/30"
+  ];
+  const couleur = couleurs[id % couleurs.length];
+  return { initiale: initiale.toUpperCase(), couleur };
+}
+
+function mapJournalierStatut(rapport: RapportJournalierAPI): StatutDepot {
+  if (!rapport.depose) return "Manquant";
+  const heure = new Date(rapport.created_at).getHours();
+  return heure >= 18 ? "En retard" : "Déposé";
+}
+
+function mapFinalStatut(rapport: RapportFinalAPI): RapportFinal["statut"] {
+  if (!rapport.fichier_path) return "À déposer";
+  if (rapport.statut_validation === 'valide') return "Validé";
+  return "En attente";
+}
+
+function mapApiJournalierToFrontend(r: RapportJournalierAPI): RapportJournalier {
+  const ui = getStagiaireUI(r.nom_stagiaire, r.stagiaire);
+  return {
+    id: String(r.id),
+    stagiaireId: String(r.stagiaire),
+    nomStagiaire: r.nom_stagiaire,
+    date: r.date_rapport,
+    statut: mapJournalierStatut(r),
+    fichier: r.depose ? `rapport-${r.stagiaire}-${r.date_rapport}.pdf` : undefined,
+    heure: r.created_at ? new Date(r.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : undefined,
+    projet: "Projet Stagiaire",
+  };
+}
+
+function mapApiFinalToFrontend(f: RapportFinalAPI): RapportFinal {
+  return {
+    id: String(f.id),
+    stagiaireId: String(f.stagiaire),
+    nomStagiaire: f.nom_stagiaire,
+    titre: f.fichier_path ? "Mémoire de fin de stage" : "Rapport non déposé",
+    date: f.date_depot || "—",
+    statut: mapFinalStatut(f),
+    fichier: f.fichier_path ? f.fichier_path.split('/').pop() : undefined,
+  };
 }
 
 /* ------------------------ Page ------------------------ */
@@ -117,30 +144,115 @@ function RapportsPage() {
   const [tab, setTab] = useState<Tab>("journaliers");
   const [query, setQuery] = useState("");
   const [statutFilter, setStatutFilter] = useState<"Tous" | StatutDepot>("Tous");
+  
+  const [journaliers, setJournaliers] = useState<RapportJournalier[]>([]);
+  const [finaux, setFinaux] = useState<RapportFinal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRapports = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const token = getAuthToken();
+    console.log('🔑 Token:', token ? 'Présent' : 'Absent');
+    console.log('📅 Date requise:', TODAY);
+    
+    if (!token) {
+      setError('Token d\'authentification manquant. Veuillez vous reconnecter.');
+      setLoading(false);
+      return;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+
+    try {
+      // Fetch journaliers
+      console.log('📥 Fetch journaliers...');
+      const urlJ = getApiUrl(`/api/rapports/journaliers/?date_rapport=${TODAY}`);
+      console.log('URL:', urlJ);
+      
+      const resJ = await fetch(urlJ, { headers });
+      console.log('📊 Response journaliers:', resJ.status, resJ.statusText);
+      
+      if (!resJ.ok) {
+        const errorText = await resJ.text();
+        console.error('❌ Erreur journaliers:', errorText);
+        throw new Error(`Erreur journaliers: ${resJ.status}`);
+      }
+      
+      const dataJ = await resJ.json();
+      console.log('✅ Données journaliers reçues:', dataJ);
+      
+      const rawListJ = Array.isArray(dataJ) ? dataJ : dataJ.results || [];
+      console.log('📋 Liste brute journaliers:', rawListJ.length, 'éléments');
+      
+      const mappedJ = rawListJ.map(mapApiJournalierToFrontend);
+      console.log('🔄 Journaliers mappés:', mappedJ);
+
+      // Fetch finaux
+      console.log('📥 Fetch finaux...');
+      const urlF = getApiUrl('/api/rapports/finaux/');
+      console.log('URL:', urlF);
+      
+      const resF = await fetch(urlF, { headers });
+      console.log('📊 Response finaux:', resF.status, resF.statusText);
+      
+      if (!resF.ok) {
+        const errorText = await resF.text();
+        console.error('❌ Erreur finaux:', errorText);
+        throw new Error(`Erreur finaux: ${resF.status}`);
+      }
+      
+      const dataF = await resF.json();
+      console.log('✅ Données finaux reçues:', dataF);
+      
+      const rawListF = Array.isArray(dataF) ? dataF : dataF.results || [];
+      console.log('📋 Liste brute finaux:', rawListF.length, 'éléments');
+      
+      const mappedF = rawListF.map(mapApiFinalToFrontend);
+      console.log('🔄 Finaux mappés:', mappedF);
+
+      setJournaliers(mappedJ);
+      setFinaux(mappedF);
+      setLoading(false);
+      
+      if (mappedJ.length === 0 && mappedF.length === 0) {
+        setError('Aucun rapport trouvé dans la base de données.');
+      }
+      
+    } catch (err) {
+      console.error('💥 Erreur fetchRapports:', err);
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRapports();
+  }, []);
 
   const kpis = {
-    deposes: JOURNALIERS.filter((j) => j.statut === "Déposé" || j.statut === "En retard").length,
-    manquants: JOURNALIERS.filter((j) => j.statut === "Manquant").length,
-    finauxDeposes: FINAUX.filter((f) => f.statut !== "À déposer").length,
-    finauxValides: FINAUX.filter((f) => f.statut === "Validé").length,
-    enAttente: FINAUX.filter((f) => f.statut === "En attente").length,
+    deposes: journaliers.filter((j) => j.statut === "Déposé" || j.statut === "En retard").length,
+    manquants: journaliers.filter((j) => j.statut === "Manquant").length,
+    finauxDeposes: finaux.filter((f) => f.statut !== "À déposer").length,
+    finauxValides: finaux.filter((f) => f.statut === "Validé").length,
+    enAttente: finaux.filter((f) => f.statut === "En attente").length,
   };
 
   const filteredJournaliers = useMemo(() => {
-    return JOURNALIERS.filter((j) => {
+    return journaliers.filter((j) => {
       if (statutFilter !== "Tous" && j.statut !== statutFilter) return false;
       if (query) {
         const q = query.toLowerCase();
-        const s = getStagiaire(j.stagiaireId);
-        return (
-          s.nom.toLowerCase().includes(q) ||
-          j.projet.toLowerCase().includes(q) ||
-          (j.fichier ?? "").toLowerCase().includes(q)
-        );
+        return j.nomStagiaire.toLowerCase().includes(q) || j.projet.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [query, statutFilter]);
+  }, [query, statutFilter, journaliers]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -159,7 +271,13 @@ function RapportsPage() {
             </div>
           </div>
 
-        
+          {/* Error display */}
+          {error && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+              <strong>⚠️ Erreur :</strong> {error}
+            </div>
+          )}
+
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
             <KpiCard label="Rapports déposés aujourd'hui" value={String(kpis.deposes)} iconTone="green" icon={CheckCircle2} />
@@ -177,16 +295,25 @@ function RapportsPage() {
           </div>
 
           {/* Tab content */}
-          {tab === "journaliers" && (
-            <JournaliersTab
-              rows={filteredJournaliers}
-              total={JOURNALIERS.length}
-              query={query} onQuery={setQuery}
-              statut={statutFilter} onStatut={setStatutFilter}
-            />
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-muted-foreground">Chargement des rapports...</span>
+            </div>
+          ) : (
+            <>
+              {tab === "journaliers" && (
+                <JournaliersTab
+                  rows={filteredJournaliers}
+                  total={journaliers.length}
+                  query={query} onQuery={setQuery}
+                  statut={statutFilter} onStatut={setStatutFilter}
+                />
+              )}
+              {tab === "finaux" && <FinauxTab rows={finaux} />}
+              {tab === "suivi" && <SuiviTab journaliers={journaliers} finaux={finaux} />}
+            </>
           )}
-          {tab === "finaux" && <FinauxTab rows={FINAUX} />}
-          {tab === "suivi" && <SuiviTab />}
         </main>
       </div>
     </div>
@@ -210,7 +337,6 @@ function JournaliersTab({
 
   return (
     <section className="rounded-xl border border-border bg-card overflow-hidden">
-      {/* Section header */}
       <div className="px-4 md:px-5 py-3.5 border-b border-border flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
         <div className="flex items-center gap-2.5 min-w-0">
           <FileText className="h-4 w-4 text-primary shrink-0" />
@@ -221,24 +347,15 @@ function JournaliersTab({
             · {deposes} déposés · {manquants} manquants
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="h-8 px-3 rounded-md text-xs font-medium bg-success/15 text-success ring-1 ring-inset ring-success/25 hover:bg-success/20 inline-flex items-center gap-1.5">
-            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-          </button>
-          <button className="h-8 px-3 rounded-md text-xs font-medium bg-primary/15 text-primary ring-1 ring-inset ring-primary/25 hover:bg-primary/20 inline-flex items-center gap-1.5">
-            <Mail className="h-3.5 w-3.5" /> Email Admin
-          </button>
-        </div>
       </div>
 
-      {/* Filters bar */}
       <div className="px-4 md:px-5 py-3 border-b border-border flex flex-col md:flex-row gap-2.5">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <input
             value={query}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="Rechercher un stagiaire, un projet, un fichier…"
+            placeholder="Rechercher un stagiaire, un projet…"
             className="w-full h-9 pl-9 pr-9 rounded-md bg-background border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
           />
           {query && (
@@ -247,63 +364,39 @@ function JournaliersTab({
             </button>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground mr-1">
-            <Filter className="h-3 w-3" /> Statut :
-          </span>
-          {(["Tous", "Déposé", "En retard", "Manquant"] as const).map((s) => {
-            const active = statut === s;
-            return (
-              <button
-                key={s}
-                onClick={() => onStatut(s as "Tous" | StatutDepot)}
-                className={`h-7 px-2.5 rounded-full text-[11px] font-medium ring-1 ring-inset transition-colors ${
-                  active
-                    ? "bg-primary/15 text-primary ring-primary/30"
-                    : "bg-background text-muted-foreground ring-border hover:text-foreground hover:bg-muted/40"
-                }`}
-              >
-                {s}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">
               <th className="text-left font-medium px-4 md:px-5 py-2.5">Stagiaire</th>
               <th className="text-left font-medium px-3 py-2.5">Date</th>
-              <th className="text-left font-medium px-3 py-2.5">Statut dépôt</th>
+              <th className="text-left font-medium px-3 py-2.5">Statut</th>
               <th className="text-left font-medium px-3 py-2.5">Fichier</th>
-              <th className="text-left font-medium px-3 py-2.5">Projet</th>
-              <th className="text-left font-medium px-3 py-2.5">Heure dépôt</th>
-              <th className="text-right font-medium px-4 md:px-5 py-2.5">Actions</th>
+              <th className="text-left font-medium px-3 py-2.5">Heure</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  Aucun rapport journalier ne correspond aux filtres.
+                <td colSpan={5} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  Aucun rapport journalier trouvé.
                 </td>
               </tr>
             ) : (
               rows.map((r) => {
-                const s = getStagiaire(r.stagiaireId);
+                const ui = getStagiaireUI(r.nomStagiaire, parseInt(r.stagiaireId));
                 const m = statutMeta(r.statut);
                 const StatIcon = m.icon;
                 return (
                   <tr key={r.id} className="border-t border-border/60 hover:bg-muted/20 transition-colors">
                     <td className="px-4 md:px-5 py-3">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className={`h-8 w-8 rounded-full grid place-items-center text-[11px] font-semibold ring-1 ring-inset ${s.couleur}`}>
-                          {s.initiale}
+                        <span className={`h-8 w-8 rounded-full grid place-items-center text-[11px] font-semibold ring-1 ring-inset ${ui.couleur}`}>
+                          {ui.initiale}
                         </span>
-                        <span className="text-sm text-foreground truncate">{s.nom}</span>
+                        <span className="text-sm text-foreground truncate">{r.nomStagiaire}</span>
                       </div>
                     </td>
                     <td className="px-3 py-3">
@@ -328,25 +421,7 @@ function JournaliersTab({
                       )}
                     </td>
                     <td className="px-3 py-3">
-                      <span className="text-xs text-muted-foreground truncate inline-block max-w-[180px]">{r.projet}</span>
-                    </td>
-                    <td className="px-3 py-3">
                       <span className="text-xs tabular-nums text-foreground/80">{r.heure ?? "—"}</span>
-                    </td>
-                    <td className="px-4 md:px-5 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {r.fichier ? (
-                          <>
-                            <IconBtn title="Voir" icon={Eye} />
-                            <IconBtn title="Télécharger" icon={Download} />
-                          </>
-                        ) : (
-                          <button className="h-7 px-2 rounded-md text-[11px] font-medium bg-warning/15 text-warning ring-1 ring-inset ring-warning/25 hover:bg-warning/20 inline-flex items-center gap-1">
-                            <Bell className="h-3 w-3" /> Relancer
-                          </button>
-                        )}
-                        <IconBtn title="Plus" icon={MoreHorizontal} />
-                      </div>
                     </td>
                   </tr>
                 );
@@ -375,67 +450,53 @@ function FinauxTab({ rows }: { rows: RapportFinal[] }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4 p-4 md:p-5">
-        {rows.map((f) => {
-          const s = getStagiaire(f.stagiaireId);
-          const m = statutMeta(f.statut);
-          const StatIcon = m.icon;
-          return (
-            <article key={f.id} className="rounded-lg border border-border bg-background/50 hover:border-border/80 hover:shadow-sm transition-all p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className={`h-9 w-9 rounded-full grid place-items-center text-[11px] font-semibold ring-1 ring-inset ${s.couleur}`}>
-                    {s.initiale}
+        {rows.length === 0 ? (
+          <div className="col-span-full py-10 text-center text-sm text-muted-foreground">
+            Aucun rapport final trouvé.
+          </div>
+        ) : (
+          rows.map((f) => {
+            const ui = getStagiaireUI(f.nomStagiaire, parseInt(f.stagiaireId));
+            const m = statutMeta(f.statut);
+            const StatIcon = m.icon;
+            return (
+              <article key={f.id} className="rounded-lg border border-border bg-background/50 hover:border-border/80 hover:shadow-sm transition-all p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`h-9 w-9 rounded-full grid place-items-center text-[11px] font-semibold ring-1 ring-inset ${ui.couleur}`}>
+                      {ui.initiale}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-foreground truncate">{f.nomStagiaire}</div>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ring-1 ring-inset whitespace-nowrap ${m.chip}`}>
+                    <StatIcon className="h-2.5 w-2.5" />
+                    {f.statut}
                   </span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">{s.nom}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{s.projet}</div>
-                  </div>
                 </div>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ring-1 ring-inset whitespace-nowrap ${m.chip}`}>
-                  <StatIcon className="h-2.5 w-2.5" />
-                  {f.statut}
-                </span>
-              </div>
 
-              <div>
-                <div className="text-sm text-foreground/90 leading-snug line-clamp-2">{f.titre}</div>
-                {f.fichier ? (
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <Paperclip className="h-3 w-3" />
-                    <span className="truncate">{f.fichier}</span>
-                    {f.taille && <span>· {f.taille}</span>}
-                    {f.pages && <span>· {f.pages} pages</span>}
-                  </div>
-                ) : (
-                  <div className="mt-2 text-[11px] text-muted-foreground/70 italic">Aucun fichier déposé</div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-border/60">
-                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <CalendarDays className="h-3 w-3" /> {formatDateFr(f.date)}
-                </span>
-                <div className="flex items-center gap-1">
+                <div>
+                  <div className="text-sm text-foreground/90 leading-snug line-clamp-2">{f.titre}</div>
                   {f.fichier ? (
-                    <>
-                      <IconBtn title="Aperçu" icon={Eye} />
-                      <IconBtn title="Télécharger" icon={Download} />
-                      {f.statut === "En attente" && (
-                        <button className="h-7 px-2.5 rounded-md text-[11px] font-medium bg-success/15 text-success ring-1 ring-inset ring-success/25 hover:bg-success/20 inline-flex items-center gap-1">
-                          <ShieldCheck className="h-3 w-3" /> Valider
-                        </button>
-                      )}
-                    </>
+                    <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <Paperclip className="h-3 w-3" />
+                      <span className="truncate">{f.fichier}</span>
+                    </div>
                   ) : (
-                    <button className="h-7 px-2.5 rounded-md text-[11px] font-medium bg-warning/15 text-warning ring-1 ring-inset ring-warning/25 hover:bg-warning/20 inline-flex items-center gap-1">
-                      <Bell className="h-3 w-3" /> Relancer
-                    </button>
+                    <div className="mt-2 text-[11px] text-muted-foreground/70 italic">Aucun fichier déposé</div>
                   )}
                 </div>
-              </div>
-            </article>
-          );
-        })}
+
+                <div className="flex items-center justify-between pt-2 border-t border-border/60">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <CalendarDays className="h-3 w-3" /> {formatDateFr(f.date)}
+                  </span>
+                </div>
+              </article>
+            );
+          })
+        )}
       </div>
     </section>
   );
@@ -443,13 +504,15 @@ function FinauxTab({ rows }: { rows: RapportFinal[] }) {
 
 /* ------------------------ Tab: Suivi ------------------------ */
 
-function SuiviTab() {
+function SuiviTab({ journaliers, finaux }: { journaliers: RapportJournalier[], finaux: RapportFinal[] }) {
+  const stagiaireIds = Array.from(new Set([...journaliers.map(j => j.stagiaireId), ...finaux.map(f => f.stagiaireId)]));
+  
   return (
     <section className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-4 md:px-5 py-3.5 border-b border-border flex items-center gap-2.5">
         <UserCheck className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground">Suivi par stagiaire</h3>
-        <span className="text-[11px] text-muted-foreground">· {STAGIAIRES.length} stagiaires</span>
+        <span className="text-[11px] text-muted-foreground">· {stagiaireIds.length} stagiaires</span>
       </div>
 
       <div className="overflow-x-auto">
@@ -457,32 +520,33 @@ function SuiviTab() {
           <thead>
             <tr className="bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">
               <th className="text-left font-medium px-4 md:px-5 py-2.5">Stagiaire</th>
-              <th className="text-left font-medium px-3 py-2.5">Projet</th>
               <th className="text-left font-medium px-3 py-2.5">Journaliers</th>
-              <th className="text-left font-medium px-3 py-2.5">Taux de dépôt</th>
+              <th className="text-left font-medium px-3 py-2.5">Taux</th>
               <th className="text-left font-medium px-3 py-2.5">Rapport final</th>
-              <th className="text-right font-medium px-4 md:px-5 py-2.5">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {STAGIAIRES.map((s) => {
-              const deposes = JOURNALIERS.filter((j) => j.stagiaireId === s.id && j.statut !== "Manquant").length;
-              const total = JOURNALIERS.filter((j) => j.stagiaireId === s.id).length || 1;
+            {stagiaireIds.map((stagId) => {
+              const stagJournaliers = journaliers.filter(j => j.stagiaireId === stagId);
+              const deposes = stagJournaliers.filter(j => j.statut !== "Manquant").length;
+              const total = stagJournaliers.length || 1;
               const pct = Math.round((deposes / total) * 100);
-              const final = FINAUX.find((f) => f.stagiaireId === s.id);
+              const final = finaux.find(f => f.stagiaireId === stagId);
               const fm = final ? statutMeta(final.statut) : null;
               const FIcon = fm?.icon;
+              const nomStagiaire = stagJournaliers[0]?.nomStagiaire || final?.nomStagiaire || 'Inconnu';
+              const ui = getStagiaireUI(nomStagiaire, parseInt(stagId));
+              
               return (
-                <tr key={s.id} className="border-t border-border/60 hover:bg-muted/20 transition-colors">
+                <tr key={stagId} className="border-t border-border/60 hover:bg-muted/20 transition-colors">
                   <td className="px-4 md:px-5 py-3">
                     <div className="flex items-center gap-2.5">
-                      <span className={`h-8 w-8 rounded-full grid place-items-center text-[11px] font-semibold ring-1 ring-inset ${s.couleur}`}>
-                        {s.initiale}
+                      <span className={`h-8 w-8 rounded-full grid place-items-center text-[11px] font-semibold ring-1 ring-inset ${ui.couleur}`}>
+                        {ui.initiale}
                       </span>
-                      <span className="text-sm text-foreground">{s.nom}</span>
+                      <span className="text-sm text-foreground">{nomStagiaire}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-xs text-muted-foreground">{s.projet}</td>
                   <td className="px-3 py-3">
                     <span className="text-xs tabular-nums text-foreground/90">{deposes}/{total}</span>
                   </td>
@@ -507,13 +571,6 @@ function SuiviTab() {
                       <span className="text-xs text-muted-foreground/70 italic">—</span>
                     )}
                   </td>
-                  <td className="px-4 md:px-5 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <IconBtn title="Voir profil" icon={Eye} />
-                      <IconBtn title="Relancer" icon={Bell} />
-                      <IconBtn title="Plus" icon={MoreHorizontal} />
-                    </div>
-                  </td>
                 </tr>
               );
             })}
@@ -524,7 +581,24 @@ function SuiviTab() {
   );
 }
 
-/* ------------------------ Small UI helpers ------------------------ */
+/* ------------------------ Helpers ------------------------ */
+
+function statutMeta(s: StatutDepot | RapportFinal["statut"]) {
+  switch (s) {
+    case "Déposé":
+    case "Validé":
+      return { chip: "bg-success/15 text-success ring-success/30", icon: CheckCircle2 };
+    case "En retard":
+      return { chip: "bg-warning/15 text-warning ring-warning/30", icon: Clock };
+    case "Manquant":
+    case "À déposer":
+      return { chip: "bg-destructive/15 text-destructive ring-destructive/30", icon: AlertCircle };
+    case "En attente":
+      return { chip: "bg-primary/15 text-primary ring-primary/30", icon: Clock };
+    default:
+      return { chip: "bg-muted/60 text-muted-foreground ring-border", icon: AlertCircle };
+  }
+}
 
 function TabButton({ active, onClick, icon: Icon, label }: {
   active: boolean; onClick: () => void; icon: typeof FileText; label: string;
@@ -541,25 +615,5 @@ function TabButton({ active, onClick, icon: Icon, label }: {
       <Icon className="h-3.5 w-3.5" />
       {label}
     </button>
-  );
-}
-
-function IconBtn({ icon: Icon, title }: { icon: typeof Eye; title: string }) {
-  return (
-    <button
-      title={title}
-      className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-    >
-      <Icon className="h-3.5 w-3.5" />
-    </button>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</label>
-      {children}
-    </div>
   );
 }
