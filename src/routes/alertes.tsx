@@ -218,8 +218,8 @@ function AlertesPage() {
       const res = await fetch(getApiUrl(`/api/justifications/${id}/accepter/`), {
         method: 'POST',
         headers,
-        body: JSON.stringify({ commentaire_rh: '' }),
       });
+      
       if (res.ok) {
         fetchAll();
       } else {
@@ -231,7 +231,7 @@ function AlertesPage() {
     }
   };
 
-  const handleRejeterJustification = async (id: string) => {
+const handleRejeterJustification = async (id: string) => {
     const token = getAuthToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -242,8 +242,8 @@ function AlertesPage() {
       const res = await fetch(getApiUrl(`/api/justifications/${id}/rejeter/`), {
         method: 'POST',
         headers,
-        body: JSON.stringify({ commentaire_rh: '' }),
       });
+      
       if (res.ok) {
         fetchAll();
       } else {
