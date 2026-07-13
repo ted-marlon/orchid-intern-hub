@@ -40,7 +40,8 @@ type RapportFinalAPI = {
   id: number;
   stagiaire: number;
   nom_stagiaire: string;
-  fichier_path: string | null;
+  fichier: string | null;        // ✅ Nouveau nom (Cloudinary)
+  fichier_url?: string | null;
   date_depot: string | null;
   statut_validation: 'valide' | 'en_attente' | 'refuse';
   commentaire_rh: string | null;
@@ -104,7 +105,7 @@ function mapJournalierStatut(rapport: RapportJournalierAPI): StatutDepot {
 }
 
 function mapFinalStatut(rapport: RapportFinalAPI): RapportFinal["statut"] {
-  if (!rapport.fichier_path) return "À déposer";
+  if (!rapport.fichier) return "À déposer";
   if (rapport.statut_validation === 'valide') return "Validé";
   return "En attente";
 }
@@ -128,10 +129,10 @@ function mapApiFinalToFrontend(f: RapportFinalAPI): RapportFinal {
     id: String(f.id),
     stagiaireId: String(f.stagiaire),
     nomStagiaire: f.nom_stagiaire,
-    titre: f.fichier_path ? "Mémoire de fin de stage" : "Rapport non déposé",
+    titre: f.fichier ? "Mémoire de fin de stage" : "Rapport non déposé",
     date: f.date_depot || "—",
     statut: mapFinalStatut(f),
-    fichier: f.fichier_path ? f.fichier_path.split('/').pop() : undefined,
+    fichier: f.fichier ? f.fichier.split('/').pop() : undefined,
   };
 }
 
