@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TachesRouteImport } from './routes/taches'
 import { Route as StagiairesRouteImport } from './routes/stagiaires'
+import { Route as ScanQrRouteImport } from './routes/scan-qr'
 import { Route as RapportsRouteImport } from './routes/rapports'
 import { Route as ProjetsRouteImport } from './routes/projets'
 import { Route as PointageRouteImport } from './routes/pointage'
@@ -26,6 +27,11 @@ const TachesRoute = TachesRouteImport.update({
 const StagiairesRoute = StagiairesRouteImport.update({
   id: '/stagiaires',
   path: '/stagiaires',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanQrRoute = ScanQrRouteImport.update({
+  id: '/scan-qr',
+  path: '/scan-qr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RapportsRoute = RapportsRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
+  '/scan-qr': typeof ScanQrRoute
   '/stagiaires': typeof StagiairesRoute
   '/taches': typeof TachesRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
+  '/scan-qr': typeof ScanQrRoute
   '/stagiaires': typeof StagiairesRoute
   '/taches': typeof TachesRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
+  '/scan-qr': typeof ScanQrRoute
   '/stagiaires': typeof StagiairesRoute
   '/taches': typeof TachesRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/pointage'
     | '/projets'
     | '/rapports'
+    | '/scan-qr'
     | '/stagiaires'
     | '/taches'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/pointage'
     | '/projets'
     | '/rapports'
+    | '/scan-qr'
     | '/stagiaires'
     | '/taches'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/pointage'
     | '/projets'
     | '/rapports'
+    | '/scan-qr'
     | '/stagiaires'
     | '/taches'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   PointageRoute: typeof PointageRoute
   ProjetsRoute: typeof ProjetsRoute
   RapportsRoute: typeof RapportsRoute
+  ScanQrRoute: typeof ScanQrRoute
   StagiairesRoute: typeof StagiairesRoute
   TachesRoute: typeof TachesRoute
 }
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/stagiaires'
       fullPath: '/stagiaires'
       preLoaderRoute: typeof StagiairesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan-qr': {
+      id: '/scan-qr'
+      path: '/scan-qr'
+      fullPath: '/scan-qr'
+      preLoaderRoute: typeof ScanQrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rapports': {
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   PointageRoute: PointageRoute,
   ProjetsRoute: ProjetsRoute,
   RapportsRoute: RapportsRoute,
+  ScanQrRoute: ScanQrRoute,
   StagiairesRoute: StagiairesRoute,
   TachesRoute: TachesRoute,
 }

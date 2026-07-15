@@ -12,7 +12,19 @@ import {
   LogOut,
 } from "lucide-react";
 
-const nav = [
+type NavItem = {
+  to: string;
+  label: string;
+  icon: any;
+  badge?: number;
+};
+
+type NavSection = {
+  section: string;
+  items: NavItem[];
+};
+
+const nav: NavSection[] = [
   { section: "Principal", items: [
     { to: "/", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/stagiaires", label: "Stagiaires", icon: Users, badge: 1 },
@@ -23,6 +35,15 @@ const nav = [
     { to: "/pointage", label: "Pointage QR", icon: QrCode },
     { to: "/rapports", label: "Rapports", icon: FileText },
     { to: "/alertes", label: "Alertes", icon: Bell },
+  ]},
+];
+
+const stagiaireNav: NavSection[] = [
+  { section: "Principal", items: [
+    { to: "/", label: "Tableau de bord", icon: LayoutDashboard },
+  ]},
+  { section: "Pointage", items: [
+    { to: "/scan-qr", label: "Scanner QR", icon: QrCode },
   ]},
 ];
 
@@ -124,7 +145,7 @@ export function Sidebar({ open = true, onClose }: { open?: boolean; onClose?: ()
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-6">
-          {nav.map((group) => (
+          {(user?.role === 'stagiaire' ? stagiaireNav : nav).map((group) => (
             <div key={group.section}>
               <div className="px-2 mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
                 {group.section}
