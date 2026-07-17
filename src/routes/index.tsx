@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Users, UserCheck, FolderKanban, FileText, Bell } from "lucide-react";
+import { Users, UserCheck, FolderKanban, FileText, Bell, RefreshCw } from "lucide-react";
 
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
@@ -10,6 +10,7 @@ import { CandidaturesCard } from "@/components/dashboard/CandidaturesCard";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { TasksOverview } from "@/components/dashboard/TasksOverview";
 import { RecentInterns } from "@/components/dashboard/RecentInterns";
+import { getAuthToken, getApiUrl } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -49,25 +50,85 @@ interface DashboardStats {
 }
 
 function Dashboard() {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window === "undefined" ? true : window.innerWidth >= 768,
   );
+  
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
+  // 1. Vérifier le rôle de l'utilisateur et rediriger si nécessaire
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/dashboard-stats/')
-      .then(res => res.json())
-      .then(data => {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error fetching dashboard stats:', err);
-        setLoading(false);
-      });
-  }, []);
+    const fetchUserInfo = async () => {
+      const token = getAuthToken();
+      if (!token) {
+        router.navigate({ to: "/login" });
+        return;
+      }
 
+      try {
+        const response = await fetch(getApiUrl("/api/users/me/"), {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const role = data.role;
+          setUserRole(role);
+
+          // 🚀 Redirection immédiate pour les stagiaires (pas de chargement de stats inutile)
+          if (role === 'stagiaire') {
+            router.navigate({ to: "/mes-projets" });
+          }
+        } else {
+          router.navigate({ to: "/login" });
+        }
+      } catch (err) {
+        console.error("Error fetching user info:", err);
+        router.navigate({ to: "/login" });
+      }
+    };
+
+    fetchUserInfo();
+  }, [router]);
+
+  // 2. Charger les statistiques UNIQUEMENT si c'est un Admin/RH
+  useEffect(() => {
+    if (userRole && userRole !== 'stagiaire') {
+      setLoading(true);
+      fetch(getApiUrl('/api/dashboard-stats/'), {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      })
+        .then(res => res.json())
+        .then(data => {
+          setStats(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Error fetching dashboard stats:', err);
+          setLoading(false);
+        });
+    }
+  }, [userRole]);
+
+  // Afficher un loader pendant la vérification du rôle ou la redirection
+  if (userRole === null || userRole === 'stagiaire') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // 3. Affichage du Dashboard Admin/RH
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -75,7 +136,6 @@ function Dashboard() {
         <Topbar title="Tableau de bord" sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
         <main className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6">
-
           {/* KPIs */}
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <KpiCard

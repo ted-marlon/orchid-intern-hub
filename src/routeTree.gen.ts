@@ -15,6 +15,9 @@ import { Route as ScanQrRouteImport } from './routes/scan-qr'
 import { Route as RapportsRouteImport } from './routes/rapports'
 import { Route as ProjetsRouteImport } from './routes/projets'
 import { Route as PointageRouteImport } from './routes/pointage'
+import { Route as MesTachesRouteImport } from './routes/mes-taches'
+import { Route as MesRapportsRouteImport } from './routes/mes-rapports'
+import { Route as MesProjetsRouteImport } from './routes/mes-projets'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AlertesRouteImport } from './routes/alertes'
 import { Route as IndexRouteImport } from './routes/index'
@@ -49,6 +52,21 @@ const PointageRoute = PointageRouteImport.update({
   path: '/pointage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MesTachesRoute = MesTachesRouteImport.update({
+  id: '/mes-taches',
+  path: '/mes-taches',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesRapportsRoute = MesRapportsRouteImport.update({
+  id: '/mes-rapports',
+  path: '/mes-rapports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesProjetsRoute = MesProjetsRouteImport.update({
+  id: '/mes-projets',
+  path: '/mes-projets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -69,6 +87,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alertes': typeof AlertesRoute
   '/login': typeof LoginRoute
+  '/mes-projets': typeof MesProjetsRoute
+  '/mes-rapports': typeof MesRapportsRoute
+  '/mes-taches': typeof MesTachesRoute
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
@@ -80,6 +101,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alertes': typeof AlertesRoute
   '/login': typeof LoginRoute
+  '/mes-projets': typeof MesProjetsRoute
+  '/mes-rapports': typeof MesRapportsRoute
+  '/mes-taches': typeof MesTachesRoute
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
@@ -92,6 +116,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/alertes': typeof AlertesRoute
   '/login': typeof LoginRoute
+  '/mes-projets': typeof MesProjetsRoute
+  '/mes-rapports': typeof MesRapportsRoute
+  '/mes-taches': typeof MesTachesRoute
   '/pointage': typeof PointageRoute
   '/projets': typeof ProjetsRoute
   '/rapports': typeof RapportsRoute
@@ -105,6 +132,9 @@ export interface FileRouteTypes {
     | '/'
     | '/alertes'
     | '/login'
+    | '/mes-projets'
+    | '/mes-rapports'
+    | '/mes-taches'
     | '/pointage'
     | '/projets'
     | '/rapports'
@@ -116,6 +146,9 @@ export interface FileRouteTypes {
     | '/'
     | '/alertes'
     | '/login'
+    | '/mes-projets'
+    | '/mes-rapports'
+    | '/mes-taches'
     | '/pointage'
     | '/projets'
     | '/rapports'
@@ -127,6 +160,9 @@ export interface FileRouteTypes {
     | '/'
     | '/alertes'
     | '/login'
+    | '/mes-projets'
+    | '/mes-rapports'
+    | '/mes-taches'
     | '/pointage'
     | '/projets'
     | '/rapports'
@@ -139,6 +175,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertesRoute: typeof AlertesRoute
   LoginRoute: typeof LoginRoute
+  MesProjetsRoute: typeof MesProjetsRoute
+  MesRapportsRoute: typeof MesRapportsRoute
+  MesTachesRoute: typeof MesTachesRoute
   PointageRoute: typeof PointageRoute
   ProjetsRoute: typeof ProjetsRoute
   RapportsRoute: typeof RapportsRoute
@@ -191,6 +230,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PointageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mes-taches': {
+      id: '/mes-taches'
+      path: '/mes-taches'
+      fullPath: '/mes-taches'
+      preLoaderRoute: typeof MesTachesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mes-rapports': {
+      id: '/mes-rapports'
+      path: '/mes-rapports'
+      fullPath: '/mes-rapports'
+      preLoaderRoute: typeof MesRapportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mes-projets': {
+      id: '/mes-projets'
+      path: '/mes-projets'
+      fullPath: '/mes-projets'
+      preLoaderRoute: typeof MesProjetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -219,6 +279,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertesRoute: AlertesRoute,
   LoginRoute: LoginRoute,
+  MesProjetsRoute: MesProjetsRoute,
+  MesRapportsRoute: MesRapportsRoute,
+  MesTachesRoute: MesTachesRoute,
   PointageRoute: PointageRoute,
   ProjetsRoute: ProjetsRoute,
   RapportsRoute: RapportsRoute,

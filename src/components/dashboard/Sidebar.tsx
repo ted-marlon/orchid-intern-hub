@@ -39,8 +39,10 @@ const nav: NavSection[] = [
 ];
 
 const stagiaireNav: NavSection[] = [
-  { section: "Principal", items: [
-    { to: "/", label: "Tableau de bord", icon: LayoutDashboard },
+  { section: "Mes activités", items: [
+    { to: "/mes-projets", label: "Mes projets", icon: FolderKanban },
+    { to: "/mes-taches", label: "Mes tâches", icon: CheckSquare },
+    { to: "/mes-rapports", label: "Mes rapports", icon: FileText },
   ]},
   { section: "Pointage", items: [
     { to: "/scan-qr", label: "Scanner QR", icon: QrCode },
